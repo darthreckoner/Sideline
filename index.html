@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#0b2a22">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sideline">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./styles.css">
+  <title>Sideline</title>
+</head>
+<body>
+<div id="app">
+  <main class="board-frame">
+    <canvas id="board" aria-label="Interactive soccer tactics field"></canvas>
+    <div id="message" class="toast" role="status" aria-live="polite"></div>
+  </main>
+
+  <nav class="rail" aria-label="Board controls">
+    <button data-mode="move" class="active"><i>✥</i><span>Move</span></button>
+    <button data-mode="arrow"><i>➜</i><span>Arrow</span></button>
+    <button data-mode="pen"><i>✎</i><span>Draw</span></button>
+    <button data-mode="erase"><i>⌫</i><span>Erase</span></button>
+    <button id="undo"><i>↶</i><span>Undo</span></button>
+    <button id="redo"><i>↷</i><span>Redo</span></button>
+    <button id="capture"><i>◎</i><span>Set start</span></button>
+    <button id="reset-start"><i>⟲</i><span>Reset</span></button>
+    <button id="clear"><i>✕</i><span>Clear ink</span></button>
+    <button id="save"><i>★</i><span>Save</span></button>
+    <button id="share" class="primary"><i>⇪</i><span>Share</span></button>
+    <button id="menu"><i>☰</i><span>Menu</span></button>
+  </nav>
+</div>
+
+<dialog id="menuDialog">
+  <form method="dialog">
+    <div class="dialog-title"><h2>Board</h2><button class="x" aria-label="Close">✕</button></div>
+    <h3>Format</h3>
+    <div class="seg" id="formatSeg">
+      <button type="button" data-format="9v9">Soccer 9v9</button>
+      <button type="button" data-format="7v7">Soccer 7v7</button>
+    </div>
+    <h3>Home color</h3>
+    <div class="swatches" id="sw-home"></div>
+    <h3>Away color</h3>
+    <div class="swatches" id="sw-away"></div>
+    <div class="menu-actions">
+      <button type="button" id="load">Saved boards</button>
+      <button type="button" id="help">How it works</button>
+      <button type="button" id="install">Add to Home Screen</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="savesDialog">
+  <form method="dialog">
+    <div class="dialog-title"><h2>Saved boards</h2><button class="x" aria-label="Close">✕</button></div>
+    <p>Five saves on this device. Add Sideline to your Home Screen so iPhone doesn't clear them.</p>
+    <div id="slots"></div>
+  </form>
+</dialog>
+
+<dialog id="helpDialog">
+  <form method="dialog">
+    <div class="dialog-title"><h2>How it works</h2><button class="x" aria-label="Close">✕</button></div>
+    <p><strong>Pass:</strong> tap a teammate of the player with the ball. Each tap is one pass.</p>
+    <p><strong>Move:</strong> drag any player or the ball. Drop the ball on a player to give it to them.</p>
+    <p><strong>Steal / give the ball:</strong> tap the ball, then tap any player (or an open spot).</p>
+    <p><strong>Demonstrate:</strong> set up the play, tap <em>Set start</em>, run it, then tap <em>Reset</em>. Undo brings the demo back.</p>
+    <p><strong>Draw:</strong> pick Arrow or Draw and swipe. Erase removes a line you touch.</p>
+    <p>Works sideways or upright. Add to Home Screen for offline use and to keep your saves.</p>
+    <button class="primary wide" value="close">Got it</button>
+  </form>
+</dialog>
+
+<!-- Plain scripts (not modules/fetch) so the app also works opened straight from disk (file://). -->
+<script defer src="./presets/soccer-9v9.js"></script>
+<script defer src="./presets/soccer-7v7.js"></script>
+<script defer src="./app.js"></script>
+</body>
+</html>

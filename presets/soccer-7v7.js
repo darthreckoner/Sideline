@@ -1,0 +1,2 @@
+// Field lines and formations. To add a format, copy this file and add a <script> tag in index.html.
+(window.SIDELINE_PRESETS ||= {})["7v7"] = {"id":"7v7","name":"Soccer 7v7","playerCount":7,"field":{"width":1000,"height":620,"penaltyDepth":145,"penaltyWidth":300,"goalAreaDepth":55,"goalAreaWidth":145,"centerCircleRadius":90},"formations":{"2-3-1":[[65,310],[230,195],[230,425],[455,130],[430,310],[455,490],[680,310]],"3-2-1":[[65,310],[230,120],[210,310],[230,500],[475,220],[475,400],[690,310]]},"defaultFormation":"2-3-1"};
