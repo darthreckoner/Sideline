@@ -1,0 +1,3 @@
+# Keep verified text bytes identical on Windows and GitHub Pages.
+* text=auto eol=lf
+*.png -text

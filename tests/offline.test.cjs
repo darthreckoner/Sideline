@@ -81,6 +81,15 @@ test("offline navigation works with query strings without requesting the network
   assert.equal(w.fetches(), 0);
 });
 
+test("offline workspace fragments resolve to the cached app shell without requesting the network", async () => {
+  const w = worker(); await w.lifecycle("install");
+  const response = await w.request(w.scope + "#coaching");
+  assert.ok(response, "The workspace URL must be handled by the offline shell");
+  assert.equal(response.status, 200);
+  assert.match(await response.text(), /id="tab-coaching"/);
+  assert.equal(w.fetches(), 0);
+});
+
 test("updates wait for old sessions and cleanup preserves other apps' caches", async () => {
   const w = worker(); await w.lifecycle("install");
   assert.equal(w.forcedActivations(), 0);

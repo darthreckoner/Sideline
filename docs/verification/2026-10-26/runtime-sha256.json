@@ -1,0 +1,78 @@
+{
+  "verifiedDate": "2026-10-26",
+  "baseCommit": "77ba65d",
+  "cache": "sideline-v0.5.1",
+  "publication": "v0.5 release prepared for GitHub Pages; deployment evidence in README.md",
+  "files": [
+    {
+      "path": "index.html",
+      "sha256": "d1e94e4dbfdeac5c90a75a769f66d0668e37db297911b07b746f3783ab505b15",
+      "bytes": 16348
+    },
+    {
+      "path": "styles.css",
+      "sha256": "ab3fd7f29c8febf06d06ad9b5d42bb996366a1d64996500f468cf4705048c452",
+      "bytes": 14737
+    },
+    {
+      "path": "app.js",
+      "sha256": "e928ac76192d9d62e4ca8f33bfb746e7c7db992b3fda150cf2bfbdac02a6cc12",
+      "bytes": 37880
+    },
+    {
+      "path": "data.js",
+      "sha256": "34262fa51e7a1ebead69ea336c33d7855cff9f968d8d72aa3fbe7fe04a88eafe",
+      "bytes": 10047
+    },
+    {
+      "path": "storage.js",
+      "sha256": "8ab504769b2700b55b43876e8b6591f661cf3fda89efc79d437b1e67e6b030f2",
+      "bytes": 1928
+    },
+    {
+      "path": "workspace.js",
+      "sha256": "19494bbe5e427bb5857b6ae437c5f744f8d13b26e0cc443a6c863136d6f2700e",
+      "bytes": 31515
+    },
+    {
+      "path": "coaching/situations.js",
+      "sha256": "4607d3f4c4a089d4f792bb697f303a93f3fc33f9d9fe97324e89c645ad6becd3",
+      "bytes": 5958
+    },
+    {
+      "path": "presets/soccer-field.js",
+      "sha256": "ee80168bfa22518bc036ed3863e264947ae3b9fa6684bc4445f4ec37cbee9365",
+      "bytes": 1246
+    },
+    {
+      "path": "presets/soccer-9v9.js",
+      "sha256": "58fcd75825d28d8834ebffb9c32eed7aa11ec3c7d40b71b768f970e738a3ce1f",
+      "bytes": 947
+    },
+    {
+      "path": "presets/soccer-7v7.js",
+      "sha256": "f68f4c9d903094ce5455ddd11c4e6ae4dd0dc7f4d71f5cb66afba055809c17fc",
+      "bytes": 887
+    },
+    {
+      "path": "manifest.webmanifest",
+      "sha256": "13b981577947cb2b77e0fd311b396dca84125def51c255074f4f4622732107b8",
+      "bytes": 451
+    },
+    {
+      "path": "icons/icon-192.png",
+      "sha256": "07a2130bf4eb4e1123c6051d99ef9636591ee8a4c0aa4ad01036ddcc3dc97d20",
+      "bytes": 1132
+    },
+    {
+      "path": "icons/icon-512.png",
+      "sha256": "6fc94841eeb8241dffd898612a33b662079ed42d1282ffc30f58dbc523b7dfa3",
+      "bytes": 3321
+    },
+    {
+      "path": "sw.js",
+      "sha256": "0e740e4966f0ede76826d97d2b0f1fe88fe65dd57640a323f054e16c5f357e7f",
+      "bytes": 1715
+    }
+  ]
+}

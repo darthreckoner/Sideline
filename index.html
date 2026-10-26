@@ -15,9 +15,12 @@
 </head>
 <body>
 <div id="app">
+<section id="board-view" class="board-workspace" role="tabpanel" aria-labelledby="tab-board">
   <main class="board-frame">
     <canvas id="board" aria-label="Interactive soccer tactics field"></canvas>
     <div id="message" class="toast" role="status" aria-live="polite"></div>
+    <div id="arrow-style" class="floating-tools" hidden aria-label="Arrow style"><button id="arrow-pass" class="on" aria-pressed="true">→ Pass</button><button id="arrow-run" aria-pressed="false">⇢ Run</button></div>
+    <details id="active-lesson" class="lesson-cue" hidden><summary id="active-lesson-title"></summary><p id="active-lesson-cue"></p><p id="active-lesson-question"></p><button id="active-lesson-source">Source and adaptation</button></details>
   </main>
 
   <nav class="rail" aria-label="Board controls">
@@ -34,6 +37,41 @@
     <button id="share" class="primary"><i>⇪</i><span>Share</span></button>
     <button id="menu"><i>☰</i><span>Menu</span></button>
   </nav>
+</section>
+
+<section id="coaching-view" class="workspace" role="tabpanel" aria-labelledby="tab-coaching" hidden>
+  <header class="page-heading"><div><p class="eyebrow">SIDELINE</p><h1 tabindex="-1">Coaching</h1><p>Positioning, passing and movement</p></div><span class="device-status" id="save-status" role="status">Opening local storage…</span></header>
+  <div class="subnav" aria-label="Coaching collection"><button id="show-situations" class="on" aria-pressed="true">Situations</button><button id="show-playbook" aria-pressed="false">My playbook</button></div>
+  <details class="panel teaching-aids"><summary>Teaching aids <span>Guides, view and visible players</span></summary>
+    <div class="settings-grid"><label>Teaching team<select id="teaching-team"><option value="home">Home · attacks right / up</option><option value="away">Away · attacks left / down</option></select></label><label>Spacing guides<select id="guide-choice"><option value="none">None</option><option value="thirds">Field thirds</option><option value="lanes">Width channels</option></select></label><label>Field view<select id="view-choice"><option value="full">Full field</option><option value="attack">Attacking half</option><option value="defense">Defending half</option></select></label></div>
+    <div class="button-row"><button id="show-all-players">Show all players</button><button id="hide-opponents">Hide opponents</button><button data-open-tab="board">Back to board</button></div><div id="visible-players" class="visibility-list"></div>
+  </details>
+  <div id="situations-panel">
+    <div class="filter-row"><label>Published ages<select id="age-filter"><option value="all">All ages</option><option value="8-12">Ages 8–12</option><option value="u10">U-10</option></select></label><label>Topic<select id="topic-filter"><option value="all">All topics</option><option>Passing</option><option>Space</option><option>Decisions</option></select></label></div>
+    <p class="section-caption" id="situation-count"></p><p class="quiet">Original board illustrations with linked FIFA youth lessons. Activity sizes stay separate from your team’s 7v7 or 9v9 format.</p>
+    <div id="situation-list" class="situation-grid"></div><p id="situation-empty" class="empty-state" hidden>No situations match these filters.</p>
+  </div>
+  <div id="playbook-panel" hidden><div class="filter-row"><label class="grow">Find a saved board<input id="playbook-search" type="search" placeholder="Name or activity"></label><button id="export-playbook">Export playbook</button><button class="import-file">Import file</button></div><p class="quiet">Saved on this device. Export editable files for a recoverable backup.</p><div id="playbook-list"></div><p id="playbook-empty" class="empty-state" hidden>Save a board to start your playbook.</p></div>
+</section>
+
+<section id="team-view" class="workspace" role="tabpanel" aria-labelledby="tab-team" hidden>
+  <header class="page-heading"><div><p class="eyebrow">SIDELINE</p><h1 tabindex="-1">Team setup</h1><p>Prepare the lineup, then apply it to Board.</p></div><span class="device-status" id="team-status" role="status"></span></header>
+  <details class="panel quick-setup"><summary>Quick board setup <span>No roster needed</span></summary>
+    <h3>Format</h3><div class="seg" id="formatSeg"></div>
+    <label>Formation for<select id="setup-side"><option value="home">Home</option><option value="away">Away</option><option value="both">Both teams</option></select></label>
+    <div class="formation-controls"><label>Formation<select id="formation" aria-describedby="formation-help"></select></label><button type="button" id="reset-formation">Reset both teams</button></div>
+    <p id="formation-help" class="quiet">Apply a shape to the chosen side. Reset both teams clears drawings and the demo start. Undo restores your board.</p>
+    <h3>Home color</h3><div class="swatches" id="sw-home"></div><h3>Away color</h3><div class="swatches" id="sw-away"></div><button class="wide" data-open-tab="board">Back to board</button>
+  </details>
+  <div class="team-picker"><label class="grow">Your teams<select id="team-picker"></select></label><button id="new-team">New team</button></div>
+  <details id="team-settings" class="panel"><summary>Team settings <span>Name, format, color and team files</span></summary><div class="settings-grid"><label>Team name<input id="team-name" maxlength="48" placeholder="Team name"></label><label>Format<select id="team-format"><option value="9v9">9v9</option><option value="7v7">7v7</option></select></label><label>Formation<select id="team-formation"></select></label><label>Team color<select id="team-color"></select></label></div><div class="button-row"><button id="copy-team">Duplicate team</button><button id="export-team">Export team</button><button class="import-file">Import file</button><button id="delete-team">Delete team</button></div></details>
+  <div class="filter-row"><label class="grow">Saved lineups<select id="saved-lineups"></select></label><button id="save-lineup">Save lineup as…</button><button id="reset-availability">Everyone available</button></div>
+  <div class="subnav team-subnav"><button id="team-roster-tab" class="on" aria-pressed="true">Roster</button><button id="team-lineup-tab" aria-pressed="false">Lineup</button></div>
+  <div class="team-columns"><section id="roster-panel" class="panel"><div class="section-heading"><h2>Roster <small id="roster-count"></small></h2><button id="add-player" class="accent">+ Add player</button></div><p class="quiet">Check who is available for this lineup. Unchecked players stay in your roster.</p><div id="roster-list"></div><p id="roster-empty" class="empty-state">Add your players to prepare a lineup.</p></section>
+    <section id="lineup-panel" class="panel"><div class="section-heading"><h2>Lineup</h2><span id="lineup-count" class="quiet"></span></div><canvas id="lineup-preview" width="1000" height="620" aria-label="Planned lineup preview"></canvas><div id="lineup-slots" class="lineup-slots"></div><h3>Bench</h3><div id="bench-list" class="bench-list"></div><label class="check-label"><input id="short-handed" type="checkbox"> Apply with empty positions (short-handed)</label><div class="button-row"><label>Apply to<select id="apply-side"><option value="home">Home</option><option value="away">Away</option></select></label><button id="apply-lineup" class="accent grow">Apply to board</button></div><p id="lineup-error" class="form-error" role="alert"></p><p class="quiet">Your board changes only when you apply. Set start after applying to begin a new demonstration.</p></section></div>
+</section>
+
+<nav class="app-tabs" role="tablist" aria-label="Sideline workspaces"><button id="tab-board" role="tab" aria-selected="true" aria-controls="board-view" data-tab="board"><span aria-hidden="true">▣</span>Board</button><button id="tab-coaching" role="tab" aria-selected="false" aria-controls="coaching-view" tabindex="-1" data-tab="coaching"><span aria-hidden="true">⚑</span>Coaching</button><button id="tab-team" role="tab" aria-selected="false" aria-controls="team-view" tabindex="-1" data-tab="team"><span aria-hidden="true">♟</span>Team</button></nav>
 </div>
 
 <dialog id="playerDialog" class="player-menu" aria-labelledby="player-title">
@@ -60,30 +98,24 @@
 <dialog id="menuDialog">
   <form method="dialog">
     <div class="dialog-title"><h2>Board</h2><button class="x" aria-label="Close">✕</button></div>
-    <h3>Format</h3>
-    <div class="seg" id="formatSeg"></div>
-    <h3><label for="formation">Formation · both teams</label></h3>
-    <div class="formation-controls">
-      <select id="formation" aria-describedby="formation-help"></select>
-      <button type="button" id="reset-formation">Reset formation</button>
-    </div>
-    <p id="formation-help">Start a fresh board with default position labels. Keeps team colors; clears drawings and the demo start. Undo restores your board.</p>
-    <h3>Home color</h3>
-    <div class="swatches" id="sw-home"></div>
-    <h3>Away color</h3>
-    <div class="swatches" id="sw-away"></div>
     <div class="menu-actions">
+      <button type="button" data-open-tab="team">Team and board setup</button>
+      <button type="button" data-open-tab="coaching">Coaching situations</button>
       <button type="button" id="load">Saved boards</button>
+      <button type="button" id="export-board">Export editable board</button>
+      <button type="button" class="import-file">Import Sideline file</button>
+      <button type="button" id="full-field">Show full field</button>
       <button type="button" id="help">How it works</button>
       <button type="button" id="install">Add to Home Screen</button>
     </div>
+    <p id="offline-status" class="quiet" role="status">Open online to prepare offline use.</p>
   </form>
 </dialog>
 
 <dialog id="savesDialog">
   <form method="dialog">
     <div class="dialog-title"><h2>Saved boards</h2><button class="x" aria-label="Close">✕</button></div>
-    <p>Five saves on this device. Browser or device cleanup can erase them, even after Home Screen installation. Share a PNG to keep a picture of a board.</p>
+    <p>Boards live in Coaching → My playbook. Export an editable file to keep a backup beyond this device.</p>
     <div id="slots"></div>
   </form>
 </dialog>
@@ -96,17 +128,30 @@
     <p><strong>Player labels:</strong> positions show by default. In Move mode, hold a player for a moment to open its menu. Choose <em>Pos</em> and a position, or <em>#</em> and a number, then Apply. On a computer, right-click also works. Undo reverses a label edit.</p>
     <p><strong>Steal / give the ball:</strong> tap the ball, then tap any player (or an open spot).</p>
     <p><strong>Demonstrate:</strong> set up the play, tap <em>Set start</em>, drag or pass, then tap <em>Reset</em>. Repeat as often as you like. Undo brings the demo back.</p>
-    <p><strong>Formation:</strong> choose a formation in Menu, or use <em>Reset formation</em> for a fresh board with its default position labels. GK is the goalkeeper on each team.</p>
+    <p><strong>Team:</strong> use Quick board setup without a roster, or add players and prepare a lineup. Apply to board previews the change; editing a team never moves your current board.</p>
+    <p><strong>Coaching:</strong> open a sourced youth activity, choose guides or a focus view, and return to Board to demonstrate. Source and adaptation shows its age, native activity size and original lesson. T identifies an end-zone target; OFF marks the inactive first defender in the U-10 sequence.</p>
+    <p><strong>Save:</strong> your current draft recovers on this device. Save a named board to My playbook; export editable files for backups. Imported files create copies.</p>
     <p><strong>Draw:</strong> pick Arrow or Draw and swipe. Erase removes a line you touch.</p>
     <p>Turn your phone sideways for a wide field. It also works upright. Open once online, then add to Home Screen for offline use. Local saves are not a guaranteed backup.</p>
     <button class="primary wide" value="close">Got it</button>
   </form>
 </dialog>
 
+<dialog id="nameDialog" aria-labelledby="name-title"><form id="name-form"><div class="dialog-title"><h2 id="name-title">Save board</h2><button type="button" class="x" data-close="nameDialog" aria-label="Cancel">✕</button></div><label>Name<input id="board-name" maxlength="80" required autofocus></label><button type="submit" class="accent wide">Save</button><p id="name-error" class="form-error" role="alert"></p></form></dialog>
+<dialog id="rosterDialog" aria-labelledby="roster-title"><form id="roster-form"><div class="dialog-title"><h2 id="roster-title">Add player</h2><button type="button" class="x" data-close="rosterDialog" aria-label="Cancel">✕</button></div><label>Name or nickname<input id="roster-name" maxlength="48" required autocomplete="off"></label><label>Jersey number<input id="roster-number" type="number" min="0" max="99" step="1" inputmode="numeric" required></label><label>Role to try (optional)<select id="roster-role"><option value="">Any role</option></select></label><button type="submit" class="accent wide">Save player</button><p id="roster-error" class="form-error" role="alert"></p></form></dialog>
+<dialog id="confirmDialog" aria-labelledby="confirm-title"><form method="dialog"><div class="dialog-title"><h2 id="confirm-title">Review change</h2><button value="cancel" class="x" aria-label="Cancel">✕</button></div><p id="confirm-message"></p><div class="button-row"><button value="cancel" class="grow">Cancel</button><button id="confirm-accept" value="accept" class="accent grow">Continue</button></div></form></dialog>
+<dialog id="sourceDialog" aria-labelledby="source-title"><div class="dialog-title"><h2 id="source-title">Source and adaptation</h2><button class="x" data-close="sourceDialog" aria-label="Close">✕</button></div><div id="source-details"></div></dialog>
+<input id="import-input" type="file" accept=".json,application/json" hidden>
+<div id="app-notice" class="app-notice" role="status" aria-live="polite" hidden></div>
+
 <!-- Plain scripts (not modules/fetch) so the app also works opened straight from disk (file://). -->
 <script defer src="./presets/soccer-field.js"></script>
 <script defer src="./presets/soccer-9v9.js"></script>
 <script defer src="./presets/soccer-7v7.js"></script>
+<script defer src="./data.js"></script>
+<script defer src="./storage.js"></script>
+<script defer src="./coaching/situations.js"></script>
 <script defer src="./app.js"></script>
+<script defer src="./workspace.js"></script>
 </body>
 </html>

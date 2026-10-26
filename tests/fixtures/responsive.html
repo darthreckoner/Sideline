@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Sideline responsive verification</title>
+<style>
+  * { box-sizing: border-box; } body { margin: 0; background: #071e19; color: #eef5ea; font: 15px system-ui; display: grid; justify-content: center; gap: 6px; padding: 6px; }
+  h1 { margin: 0; font-size: 12px; } p { display: none; } iframe { border: 1px solid #416654; background: #0b2a22; transform-origin: top left; position: absolute; }
+</style>
+<h1 id="title"></h1><p>Desktop browser viewport check</p><div id="frame-wrapper" style="position:relative"><iframe id="preview" title="Sideline viewport"></iframe></div>
+<script>
+  const params = new URLSearchParams(location.search);
+  const sizes = { phone: [375, 667], landscape: [667, 375], tablet: [1024, 768] };
+  const size = sizes[params.get("size")] || sizes.phone;
+  const view = ["board", "coaching", "team"].includes(params.get("view")) ? params.get("view") : "board";
+  document.getElementById("title").textContent = `${view} · ${size[0]} × ${size[1]}`;
+  const frame = document.getElementById("preview"); frame.width = size[0]; frame.height = size[1]; frame.src = `../../?preview=1#${view}`;
+  const scale = Math.min(1, (innerWidth - 16) / size[0], (innerHeight - 36) / size[1]);
+  frame.style.transform = `scale(${scale})`;
+  const wrapper = document.getElementById("frame-wrapper"); wrapper.style.width = `${size[0] * scale}px`; wrapper.style.height = `${size[1] * scale}px`;
+</script>
