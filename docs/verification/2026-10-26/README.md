@@ -53,4 +53,14 @@ The loopback preview is available at `http://localhost:8085/?preview=1#coaching`
 
 ## GitHub Pages publication
 
-The user authorized publishing this release for phone testing on October 26, 2026. All 37 automated checks and all six runtime JavaScript syntax checks passed again immediately before publication. All 14 runtime-file hashes match the implementation manifest. `.gitattributes` preserves these verified bytes across Windows and hosted checkouts. Publication is prepared against the unchanged remote baseline `77ba65d45d20e79d9728051d626c6388f2c2dd62`; deployment completion and live verification will be recorded after the hosting run finishes.
+The user authorized publishing this release for phone testing on October 26, 2026. All 37 automated checks and all six runtime JavaScript syntax checks passed again before publication. Text line endings were normalized to LF and the runtime manifest refreshed; `.gitattributes` keeps those exact bytes across Windows and hosted checkouts.
+
+- **Release commit:** [`7d69e5b203fa90b468b9f3c679deb4257fc5dd67`](https://github.com/darthreckoner/Sideline/commit/7d69e5b203fa90b468b9f3c679deb4257fc5dd67), based on `77ba65d45d20e79d9728051d626c6388f2c2dd62`. The remote Git tree exactly matched the staged release tree.
+- **Deployment:** [Pages run 40415389881](https://github.com/darthreckoner/Sideline/actions/runs/40415389881) completed successfully at 22:50:05 UTC on October 26, 2026.
+- **Hosted files:** all 14 runtime files returned HTTPS 200 and matched the release manifest's SHA-256 values. This verification used cache-busting URLs; the ordinary root URL was separately exercised in the browser.
+- **Browser:** the previous cached app appeared on the first visit, downloaded the update, and activated v0.5 after the sole Sideline tab was closed and reopened. The ordinary public URL then displayed Board / Coaching / Team, all five sourced activities and Team setup. Menu reported “Offline files ready on this device.” Hosted app warning/error logs were empty during these checks.
+- **Live URL:** [Sideline](https://darthreckoner.github.io/Sideline/). If an installed copy shows the old interface, open online, close all Sideline browser tabs and app windows, then reopen. Do not clear browser storage to update: local boards and teams live there.
+
+![Published Coaching workspace](published-coaching.png)
+
+A follow-up documentation commit records this deployment and its screenshot without changing runtime files. Physical-phone acceptance remains for the user's phone test; independent youth-coach and on-field acceptance remain pending.

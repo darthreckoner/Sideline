@@ -1,6 +1,6 @@
 # Sideline v0.5 — Youth Soccer Coaching Board (PWA)
 
-Offline-capable coaching whiteboard for iPhone, iPad and desktop. 9v9 by default, with 7v7 in Team → Quick board setup. No accounts or runtime dependencies. The user authorized publishing v0.5 to GitHub Pages for phone testing; see the deployment record in [verification](docs/verification/2026-10-26/README.md).
+Offline-capable coaching whiteboard for iPhone, iPad and desktop. 9v9 by default, with 7v7 in Team → Quick board setup. No accounts or runtime dependencies. v0.5 is published at [Sideline](https://darthreckoner.github.io/Sideline/) for phone testing; see the deployment record in [verification](docs/verification/2026-10-26/README.md).
 
 Built for a parent or volunteer youth recreation coach to explain positioning, passing and movement to kids in under a minute. Board stays hands-on: arrange the board, Set start, move and pass, Reset, repeat. Coaching holds sourced activity illustrations and your playbook; Team holds local rosters and planned lineups. Match tracking, accounts, subscriptions, cloud sync, AI and animation timelines are outside this release.
 
