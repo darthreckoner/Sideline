@@ -192,3 +192,31 @@ button:focus-visible, select:focus-visible { outline: 3px solid var(--accent); o
 .slot small { color: var(--muted); }
 .slot button { padding: 0 14px; font-size: 14px; }
 .slot button.delete { background: transparent; color: #ffb4a8; }
+
+/* A compact player menu stays beside the held marker and within the visible screen. */
+.player-menu {
+  position: fixed;
+  margin: 0;
+  width: min(288px, calc(100vw - 24px));
+  padding: 12px;
+}
+.player-menu::backdrop { background: #0005; }
+.player-menu .dialog-title h2 { font-size: 17px; }
+.player-menu h3 { margin-top: 8px; }
+.player-field { display: grid; gap: 6px; margin-top: 12px; }
+.player-field[hidden] { display: none; }
+.player-field label { font-size: 14px; font-weight: 650; }
+.player-field select, .player-field input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #4f7a66;
+  border-radius: 9px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 16px;
+}
+.player-field input { user-select: text; -webkit-user-select: text; }
+.player-menu #player-error { color: #ffb4a8; margin: 6px 0 0; }
+.player-menu #player-error:empty { display: none; }

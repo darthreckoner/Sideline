@@ -104,9 +104,13 @@ test("runtime presets match JSON sources and all formations contain the stated p
     vm.runInNewContext(fs.readFileSync(path.join(root, file + ".js"), "utf8"), sandbox);
     const data = JSON.parse(fs.readFileSync(path.join(root, file + ".json"), "utf8"));
     assert.deepEqual(JSON.parse(JSON.stringify(sandbox.window.SIDELINE_PRESETS[format])), data);
-    for (const positions of Object.values(data.formations)) {
+    for (const [formation, positions] of Object.entries(data.formations)) {
       assert.equal(positions.length, data.playerCount);
       assert.ok(positions.every(([x, y]) => x >= 0 && x <= data.field.width && y >= 0 && y <= data.field.height));
+      const labels = data.formationPositions[formation];
+      assert.equal(labels.length, data.playerCount);
+      assert.equal(labels[0], "GK");
+      assert.ok(labels.every((label) => Object.hasOwn(data.positions, label)));
     }
   }
 });

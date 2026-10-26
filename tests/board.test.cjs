@@ -8,7 +8,19 @@ const root = path.join(__dirname, "..");
 // Lightweight DOM adapter runs the actual application handlers without a browser dependency.
 async function app() {
   const elements = new Map();
-  const context = new Proxy({}, { get: (_, key) => key === "measureText" ? () => ({ width: 80 }) : () => {} });
+  const renderedLabels = [];
+  const context = new Proxy({}, { get: (_, key) => key === "measureText" ? () => ({ width: 80 }) : key === "fillText" ? (text) => renderedLabels.push(text) : () => {} });
+  const timers = new Map();
+  let now = 0, timerId = 0;
+  function advance(ms) {
+    const end = now + ms;
+    while (true) {
+      const next = [...timers].filter(([, timer]) => timer.time <= end).sort((a, b) => a[1].time - b[1].time)[0];
+      if (!next) break;
+      timers.delete(next[0]); now = next[1].time; next[1].handler();
+    }
+    now = end;
+  }
   function element() {
     const classes = new Set();
     return {
@@ -24,8 +36,13 @@ async function app() {
       querySelectorAll() { return this.children; },
       addEventListener(name, handler) { this.listeners[name] = handler; },
       getContext: () => context,
-      getBoundingClientRect: () => ({ left: 0, top: 0 }),
-      setPointerCapture() {}, close() {}, showModal() {},
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 288, height: 280 }),
+      setPointerCapture(id) { this.pointer = id; },
+      hasPointerCapture(id) { return this.pointer === id; },
+      releasePointerCapture() { this.pointer = null; },
+      close() { this.open = false; this.listeners.close?.({}); },
+      showModal() { this.open = true; },
+      focus() {}, select() {},
     };
   }
   const get = (id) => {
@@ -35,13 +52,17 @@ async function app() {
   const modes = ["move", "arrow", "pen", "erase"].map((mode) => {
     const button = element(); button.dataset.mode = mode; return button;
   });
+  const labelModes = ["position", "number"].map((mode) => {
+    const button = get("label-" + mode); button.dataset.labelMode = mode; return button;
+  });
   const sandbox = {
-    window: {}, document: {
+    window: { innerWidth: 1000, innerHeight: 620 }, document: {
       getElementById: get, createElement: element, addEventListener() {},
-      querySelectorAll: (selector) => selector === "[data-mode]" ? modes : get("formatSeg").children,
+      querySelectorAll: (selector) => selector === "[data-mode]" ? modes : selector === "[data-label-mode]" ? labelModes : get("formatSeg").children,
     },
     structuredClone, console, performance, devicePixelRatio: 1,
-    setTimeout: () => 0, clearTimeout() {}, requestAnimationFrame() {},
+    setTimeout: (handler, ms) => { const id = ++timerId; timers.set(id, {handler, time: now + ms}); return id; },
+    clearTimeout: (id) => timers.delete(id), requestAnimationFrame() {},
     navigator: {}, location: { protocol: "file:" },
     matchMedia: () => ({ matches: false }), addEventListener() {},
     ResizeObserver: class { observe() {} },
@@ -53,7 +74,7 @@ async function app() {
     vm.runInContext(fs.readFileSync(path.join(root, file), "utf8"), env, { filename: file });
   }
   await run("Promise.resolve()");
-  return { run, get, state: () => JSON.parse(run("JSON.stringify(snapshot())")) };
+  return { run, get, advance, renderedLabels, state: () => JSON.parse(run("JSON.stringify(snapshot())")) };
 }
 
 test("opens as 9v9, with a goalkeeper per team and registered formation choices", async () => {
@@ -65,6 +86,8 @@ test("opens as 9v9, with a goalkeeper per team and registered formation choices"
   for (const team of ["home", "away"]) {
     const players = board.players.filter((p) => p.team === team);
     assert.deepEqual(players.map((p) => p.n), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    assert.deepEqual(players.map((p) => p.position), ["GK", "LB", "CB", "RB", "LM", "CM", "RM", "LF", "RF"]);
+    assert.ok(players.every((p) => p.display === "position"));
   }
   assert.equal(board.players[0].x, 65);
   assert.equal(board.players[9].x, 935);
@@ -166,4 +189,152 @@ test("touch-style drags move a player and the ball independently and Undo revers
   assert.equal(a.state().board.ball.carrier, "h5");
   a.get("reset-start").onclick();
   assert.equal(a.state().board.players[1].x, 300);
+});
+
+function pointer(a, type, x = 245, y = 120, overrides = {}) {
+  a.get("board").listeners[type]({ pointerId: 1, button: 0, pointerType: "touch", clientX: x, clientY: y, preventDefault() {}, ...overrides });
+}
+function applyLabel(a) { a.get("player-form").listeners.submit({ preventDefault() {} }); }
+
+test("a stationary hold opens the chosen player's editor and its release never passes or drags", async () => {
+  const a = await app();
+  const before = a.state();
+  pointer(a, "pointerdown");
+  a.advance(549);
+  assert.ok(!a.get("playerDialog").open);
+  a.advance(1);
+  assert.equal(a.get("playerDialog").open, true);
+  assert.equal(a.get("player-title").textContent, "Home · LB");
+  assert.equal(a.get("player-position").value, "LB");
+  assert.equal(a.get("position-field").hidden, false);
+  assert.equal(a.get("number-field").hidden, true);
+  pointer(a, "pointermove", 450, 250);
+  pointer(a, "pointerup", 450, 250);
+  assert.deepEqual(a.state(), before);
+  assert.equal(a.run("undo.length"), 0);
+});
+
+test("short taps still pass; dragging and cancelled gestures never open the player menu", async () => {
+  const tapped = await app();
+  pointer(tapped, "pointerdown"); tapped.advance(150); pointer(tapped, "pointerup"); tapped.advance(1000);
+  assert.equal(tapped.state().board.ball.carrier, "h1");
+  assert.equal(tapped.get("message").textContent, "Pass CM → LB");
+  assert.ok(!tapped.get("playerDialog").open);
+
+  for (const action of ["drag", "pointercancel", "lostpointercapture", "mode", "menu", "undo"]) {
+    const a = await app(); pointer(a, "pointerdown"); a.advance(250);
+    if (action === "drag") pointer(a, "pointermove", 280, 170);
+    else if (action === "mode") a.run('setMode("pen")');
+    else if (action === "menu") a.get("menu").onclick();
+    else if (action === "undo") { a.run("checkpoint()"); a.get("undo").onclick(); }
+    else pointer(a, action);
+    a.advance(1000);
+    assert.ok(!a.get("playerDialog").open, action);
+    assert.equal(a.state().board.ball.carrier, "h5", action);
+    if (action === "drag") assert.equal(a.state().board.players[1].x, 280);
+  }
+});
+
+test("holding the ball or drawing across a player does not open the editor", async () => {
+  const a = await app();
+  pointer(a, "pointerdown", 454, 276); a.advance(600); pointer(a, "pointerup", 454, 276);
+  assert.ok(!a.get("playerDialog").open);
+  assert.equal(a.run("ballSelected"), true);
+  a.run('setMode("arrow")');
+  pointer(a, "pointerdown"); a.advance(600); pointer(a, "pointermove", 400, 160); pointer(a, "pointerup", 400, 160);
+  assert.ok(!a.get("playerDialog").open);
+  assert.equal(a.state().board.ink.length, 1);
+});
+
+test("one player's number or position can be edited, undone, and redone without changing its identity", async () => {
+  const a = await app();
+  const original = a.state();
+  pointer(a, "pointerdown"); a.advance(550); pointer(a, "pointerup");
+  a.get("label-number").onclick();
+  assert.equal(a.get("number-field").hidden, false);
+  assert.equal(a.get("player-position").disabled, true);
+  a.get("player-number").value = "23";
+  applyLabel(a);
+  const numbered = a.state().board.players[1];
+  assert.equal(numbered.id, "h1");
+  assert.equal(numbered.display, "number");
+  assert.equal(numbered.n, 23);
+  assert.equal(numbered.position, "LB");
+  assert.equal(a.run("playerLabel(board.players[1])"), "23");
+  assert.deepEqual(a.state().board.players[10], original.board.players[10]);
+  assert.equal(a.get("playerDialog").open, false);
+  assert.equal(a.run("undo.length"), 1);
+  a.get("undo").onclick(); assert.deepEqual(a.state(), original);
+  a.get("redo").onclick(); assert.equal(a.state().board.players[1].n, 23);
+
+  pointer(a, "pointerdown"); a.advance(550); pointer(a, "pointerup");
+  a.get("label-position").onclick();
+  a.get("player-position").value = "ST";
+  applyLabel(a);
+  assert.equal(a.state().board.players[1].display, "position");
+  assert.equal(a.run("playerLabel(board.players[1])"), "ST");
+  assert.equal(a.state().board.players[1].n, 23);
+});
+
+test("cancelling a draft or applying unchanged values does not alter the board or history", async () => {
+  const a = await app(); const before = a.state();
+  pointer(a, "pointerdown"); a.advance(550); pointer(a, "pointerup");
+  a.get("label-number").onclick(); a.get("player-number").value = "88";
+  a.get("player-close").onclick();
+  assert.deepEqual(a.state(), before);
+  assert.equal(a.run("undo.length"), 0);
+  pointer(a, "pointerdown"); a.advance(550); pointer(a, "pointerup"); applyLabel(a);
+  assert.deepEqual(a.state(), before);
+  assert.equal(a.run("undo.length"), 0);
+});
+
+test("number input rejects blank, fractional, negative, and oversized values", async () => {
+  const a = await app(); const before = a.state();
+  pointer(a, "pointerdown"); a.advance(550); pointer(a, "pointerup");
+  a.get("label-number").onclick();
+  for (const value of ["", "1.5", "-1", "100", "1e1"]) {
+    a.get("player-number").value = value; applyLabel(a);
+    assert.deepEqual(a.state(), before);
+    assert.equal(a.get("playerDialog").open, true);
+    assert.match(a.get("player-error").textContent, /0 to 99/);
+  }
+  a.get("player-number").value = "0"; applyLabel(a);
+  assert.equal(a.state().board.players[1].n, 0);
+});
+
+test("saved label choices and demo baselines round-trip; old boards gain positions without moving players", async () => {
+  const a = await app();
+  a.run('board.players[1].n = 23; board.players[1].display = "number"; board.players[2].position = "ST"');
+  a.get("capture").onclick();
+  const before = a.state();
+  a.run('const saved = JSON.parse(JSON.stringify(snapshot())); board = withPlayerLabels(saved.board, preset); start = withPlayerLabels(saved.start, preset)');
+  assert.deepEqual(a.state(), before);
+  a.run('board.players[1].x = 550; board.players[2].position = "CB"');
+  a.get("reset-start").onclick();
+  assert.deepEqual(a.state().board, before.board);
+  a.run('for (const p of board.players) { delete p.display; delete p.position; } delete board.formation; board.players[1].x = 500; board = withPlayerLabels(board, preset)');
+  assert.equal(a.state().board.players[1].position, "LB");
+  assert.equal(a.state().board.players[1].display, "position");
+  assert.equal(a.state().board.players[1].n, 23);
+  assert.equal(a.state().board.players[1].x, 500);
+});
+
+test("screen and exported board rendering use each player's chosen display", async () => {
+  const a = await app();
+  a.run('board.players[1].display = "number"; board.players[1].n = 23');
+  for (const live of [true, false]) {
+    a.renderedLabels.length = 0;
+    a.run(`contents(ctx, { live: ${live} })`);
+    assert.equal(a.renderedLabels.length, 18);
+    assert.deepEqual(a.renderedLabels.slice(0, 4), ["GK", "23", "CB", "RB"]);
+  }
+});
+
+test("mouse right-click opens the same label editor without starting a drag", async () => {
+  const a = await app(); const before = a.state();
+  pointer(a, "pointerdown", 245, 120, { button: 2, pointerType: "mouse" });
+  pointer(a, "contextmenu", 245, 120, { button: 2, pointerType: "mouse" });
+  assert.equal(a.get("playerDialog").open, true);
+  assert.equal(a.get("player-title").textContent, "Home · LB");
+  assert.deepEqual(a.state(), before);
 });

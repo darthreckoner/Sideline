@@ -36,6 +36,27 @@
   </nav>
 </div>
 
+<dialog id="playerDialog" class="player-menu" aria-labelledby="player-title">
+  <form id="player-form">
+    <div class="dialog-title"><h2 id="player-title">Player label</h2><button type="button" id="player-close" class="x" aria-label="Cancel player label edit">✕</button></div>
+    <h3>Display</h3>
+    <div class="seg" aria-label="Player label display">
+      <button type="button" id="label-position" data-label-mode="position" aria-label="Show position">Pos</button>
+      <button type="button" id="label-number" data-label-mode="number" aria-label="Show number">#</button>
+    </div>
+    <div class="player-field" id="position-field">
+      <label for="player-position">Position</label>
+      <select id="player-position"></select>
+    </div>
+    <div class="player-field" id="number-field" hidden>
+      <label for="player-number">Player number</label>
+      <input id="player-number" type="number" inputmode="numeric" min="0" max="99" step="1" required disabled>
+    </div>
+    <p id="player-error" role="alert"></p>
+    <button type="submit" class="primary wide">Apply</button>
+  </form>
+</dialog>
+
 <dialog id="menuDialog">
   <form method="dialog">
     <div class="dialog-title"><h2>Board</h2><button class="x" aria-label="Close">✕</button></div>
@@ -46,7 +67,7 @@
       <select id="formation" aria-describedby="formation-help"></select>
       <button type="button" id="reset-formation">Reset formation</button>
     </div>
-    <p id="formation-help">Start a fresh board in this formation. Keeps team colors; clears drawings and the demo start. Undo restores your board.</p>
+    <p id="formation-help">Start a fresh board with default position labels. Keeps team colors; clears drawings and the demo start. Undo restores your board.</p>
     <h3>Home color</h3>
     <div class="swatches" id="sw-home"></div>
     <h3>Away color</h3>
@@ -72,9 +93,10 @@
     <div class="dialog-title"><h2>How it works</h2><button class="x" aria-label="Close">✕</button></div>
     <p><strong>Pass:</strong> tap a teammate of the player with the ball. Each tap is one pass.</p>
     <p><strong>Move:</strong> drag any player or the ball. Drop the ball on a player to give it to them.</p>
+    <p><strong>Player labels:</strong> positions show by default. In Move mode, hold a player for a moment to open its menu. Choose <em>Pos</em> and a position, or <em>#</em> and a number, then Apply. On a computer, right-click also works. Undo reverses a label edit.</p>
     <p><strong>Steal / give the ball:</strong> tap the ball, then tap any player (or an open spot).</p>
     <p><strong>Demonstrate:</strong> set up the play, tap <em>Set start</em>, drag or pass, then tap <em>Reset</em>. Repeat as often as you like. Undo brings the demo back.</p>
-    <p><strong>Formation:</strong> choose a formation in Menu, or use <em>Reset formation</em> for a fresh board. Number 1 is the goalkeeper on each team.</p>
+    <p><strong>Formation:</strong> choose a formation in Menu, or use <em>Reset formation</em> for a fresh board with its default position labels. GK is the goalkeeper on each team.</p>
     <p><strong>Draw:</strong> pick Arrow or Draw and swipe. Erase removes a line you touch.</p>
     <p>Turn your phone sideways for a wide field. It also works upright. Open once online, then add to Home Screen for offline use. Local saves are not a guaranteed backup.</p>
     <button class="primary wide" value="close">Got it</button>

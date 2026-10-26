@@ -17,6 +17,7 @@ const BALL_HIT_FREE = 34;    // touch radius for a loose ball
 const BALL_HIT_CARRIED = 24; // smaller so it doesn't steal the carrier's touches
 const DROP_RADIUS = 44;      // dropping the ball this close to a player gives it to them
 const DRAG_THRESHOLD = 9;    // CSS px before a touch counts as a drag
+const PLAYER_HOLD_MS = 550; // a stationary hold opens the player's label menu
 
 const SWATCHES = [
   "#ffcb54", "#ff9f1c", "#ef4444", "#ff7eb6", "#a78bfa",
@@ -36,6 +37,9 @@ let ballSelected = false;
 let anim = null;
 let installPrompt = null;
 let toastTimer = null;
+let editingPlayerId = null;
+let editingLabelMode = "position";
+let playerMenuAnchor = null;
 
 const clone = (v) => structuredClone(v);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -62,6 +66,7 @@ function checkpoint() {
 }
 
 function restore(s) {
+  cancelGesture();
   board = clone(s.board);
   start = clone(s.start);
   ballSelected = false;
@@ -88,6 +93,8 @@ function updateButtons() {
 function makeBoard(data, formation = data.defaultFormation) {
   const home = data.formations[formation].map(([x, y], i) => ({
     id: "h" + i, n: i + 1, team: "home", x, y,
+    position: data.formationPositions?.[formation]?.[i] || "",
+    display: data.formationPositions?.[formation]?.[i] ? "position" : "number",
   }));
   const away = home.map((p) => ({ ...p, id: "a" + p.n, team: "away", x: data.field.width - p.x, y: data.field.height - p.y }));
   const centre = { x: data.field.width / 2, y: data.field.height / 2 };
@@ -101,6 +108,22 @@ function makeBoard(data, formation = data.defaultFormation) {
     colors: { ...DEFAULT_COLORS },
   };
 }
+
+function withPlayerLabels(saved, data) {
+  if (!saved) return null;
+  const result = clone(saved);
+  const slots = { home: 0, away: 0 };
+  const positions = data.formationPositions?.[result.formation || data.defaultFormation] || [];
+  for (const player of result.players) {
+    const slot = slots[player.team]++;
+    player.position ||= positions[slot] || "";
+    player.display ||= player.position ? "position" : "number";
+  }
+  return result;
+}
+
+const playerLabel = (player) => player.display === "position" && player.position ? player.position : String(player.n);
+const playerName = (player) => player.display === "position" && player.position ? player.position : `#${player.n}`;
 
 async function loadPreset(format) {
   const data = window.SIDELINE_PRESETS?.[format];
@@ -193,6 +216,7 @@ function resize() {
   canvas.width = Math.round(canvas.clientWidth * d);
   canvas.height = Math.round(canvas.clientHeight * d);
   draw();
+  if ($("playerDialog").open) positionPlayerMenu();
 }
 
 // ---------- rendering ----------
@@ -229,12 +253,13 @@ function strokeInk(c, ink) {
 function label(c, text, x, y, color, rot) {
   c.save();
   c.translate(x, y);
-  if (rot) c.rotate(Math.PI / 2); // keep numbers upright when the field is turned
+  if (rot) c.rotate(Math.PI / 2); // keep labels upright when the field is turned
   c.fillStyle = color;
-  c.font = "bold 30px system-ui, -apple-system, sans-serif";
+  const size = text.length > 2 ? 20 : text.length === 2 ? 25 : 30;
+  c.font = `bold ${size}px system-ui, -apple-system, sans-serif`;
   c.textAlign = "center";
   c.textBaseline = "middle";
-  c.fillText(text, 0, 2);
+  c.fillText(text, 0, 2, R * 2 - 10);
   c.restore();
 }
 
@@ -258,7 +283,7 @@ function contents(c, { rot = false, live = false } = {}) {
     c.lineWidth = 4;
     c.strokeStyle = dark ? "#f4f7ef" : "#0f2e24";
     c.stroke();
-    label(c, String(p.n), p.x, p.y, dark ? "#ffffff" : "#0b241e", rot);
+    label(c, playerLabel(p), p.x, p.y, dark ? "#ffffff" : "#0b241e", rot);
   }
 
   const b = ballPos();
@@ -332,7 +357,7 @@ function hitBall(point) {
 }
 
 canvas.addEventListener("pointerdown", (e) => {
-  if (!board) return;
+  if (!board || (e.button != null && e.button !== 0)) return;
   e.preventDefault();
   if (gesture) return; // one finger at a time
   canvas.setPointerCapture(e.pointerId);
@@ -341,6 +366,13 @@ canvas.addEventListener("pointerdown", (e) => {
   if (mode === "move") {
     if (hitBall(p)) gesture.ball = true; // the ball wins over nearby players
     else gesture.target = hitPlayer(p);
+    if (gesture.target) {
+      const held = gesture;
+      held.holdTimer = setTimeout(() => {
+        if (gesture !== held || held.moved) return;
+        openPlayerMenu(held.target, held.cx, held.cy);
+      }, PLAYER_HOLD_MS);
+    }
   } else if (mode === "arrow") {
     gesture.ink = { type: "arrow", a: p, b: p };
   } else if (mode === "pen") {
@@ -357,6 +389,7 @@ canvas.addEventListener("pointermove", (e) => {
   const p = at(e);
   if (!gesture.moved && Math.hypot(e.clientX - gesture.cx, e.clientY - gesture.cy) > DRAG_THRESHOLD) {
     gesture.moved = true;
+    clearTimeout(gesture.holdTimer);
   }
   if (mode === "move") {
     if (!gesture.moved || !(gesture.target || gesture.ball)) return;
@@ -390,13 +423,14 @@ canvas.addEventListener("pointermove", (e) => {
 canvas.addEventListener("pointerup", (e) => {
   if (!gesture || gesture.pointer !== e.pointerId) return;
   const g = gesture;
+  clearTimeout(g.holdTimer);
   gesture = null;
   if (mode === "move") {
     if (g.started && g.ball) {
       const near = hitPlayer(board.ball, DROP_RADIUS);
       if (near) {
         board.ball.carrier = near.id;
-        note(`${TEAM[near.team]} #${near.n} has the ball.`);
+        note(`${TEAM[near.team]} ${playerName(near)} has the ball.`);
       }
     } else if (!g.moved) {
       handleTap(g);
@@ -411,11 +445,29 @@ canvas.addEventListener("pointerup", (e) => {
   draw();
 });
 
-const cancelGesture = () => { gesture = null; draw(); };
-canvas.addEventListener("pointercancel", cancelGesture);
+function cancelGesture() {
+  const g = gesture;
+  gesture = null;
+  clearTimeout(g?.holdTimer);
+  if (g && canvas.hasPointerCapture(g.pointer)) canvas.releasePointerCapture(g.pointer);
+  draw();
+}
+canvas.addEventListener("pointercancel", (e) => {
+  if (gesture?.pointer === e.pointerId) cancelGesture();
+});
 canvas.addEventListener("lostpointercapture", (e) => {
   if (gesture && gesture.pointer === e.pointerId) cancelGesture();
 });
+// A mouse right-click offers the same editor. Touch uses the stationary hold above.
+canvas.addEventListener("contextmenu", (e) => {
+  e.preventDefault();
+  if (mode !== "move" || e.pointerType === "touch") return;
+  const point = at(e);
+  const player = !hitBall(point) && hitPlayer(point);
+  if (player) openPlayerMenu(player, e.clientX, e.clientY);
+});
+document.addEventListener("visibilitychange", () => { if (document.hidden) cancelGesture(); });
+addEventListener("blur", cancelGesture);
 
 function handleTap(g) {
   if (g.ball) {
@@ -426,15 +478,15 @@ function handleTap(g) {
   const player = g.target;
   if (ballSelected) {
     ballSelected = false;
-    if (player) giveBall(player, `${TEAM[player.team]} #${player.n} has the ball.`);
+    if (player) giveBall(player, `${TEAM[player.team]} ${playerName(player)} has the ball.`);
     else placeBall(g.origin);
     return;
   }
   if (!player) return;
   const c = carrierOf();
   if (!c) note("Loose ball. Tap the ball, then a player.");
-  else if (player.id === c.id) note(`#${c.n} has the ball. Tap a teammate to pass.`);
-  else if (player.team === c.team) giveBall(player, `Pass #${c.n} → #${player.n}`);
+  else if (player.id === c.id) note(`${playerName(c)} has the ball. Tap a teammate to pass.`);
+  else if (player.team === c.team) giveBall(player, `Pass ${playerName(c)} → ${playerName(player)}`);
   else note("Other team. To switch possession, tap the ball, then the player.");
 }
 
@@ -459,6 +511,7 @@ function eraseAt(p) {
 // ---------- controls ----------
 
 function setMode(next) {
+  cancelGesture();
   mode = next;
   ballSelected = false;
   document.querySelectorAll("[data-mode]").forEach((btn) => {
@@ -471,10 +524,99 @@ function setMode(next) {
 document.querySelectorAll("[data-mode]").forEach((btn) =>
   btn.addEventListener("click", () => {
     setMode(btn.dataset.mode);
-    note({ move: "Move: drag anything, tap a teammate to pass.", arrow: "Swipe to place an arrow.",
+    note({ move: "Drag to move, tap to pass, hold a player to edit its label.", arrow: "Swipe to place an arrow.",
       pen: "Swipe to draw.", erase: "Touch a line to erase it." }[mode]);
     draw();
   }));
+
+// ---------- per-player label menu ----------
+
+function positionPlayerMenu() {
+  if (!playerMenuAnchor || !$("playerDialog").open) return;
+  const dialog = $("playerDialog");
+  const viewport = window.visualViewport;
+  const left = viewport?.offsetLeft || 0, top = viewport?.offsetTop || 0;
+  const width = viewport?.width || window.innerWidth;
+  const height = viewport?.height || window.innerHeight;
+  dialog.style.maxHeight = `${Math.max(120, height - 24)}px`;
+  const rect = dialog.getBoundingClientRect();
+  dialog.style.left = `${clamp(playerMenuAnchor.x + 12, left + 12, Math.max(left + 12, left + width - rect.width - 12))}px`;
+  dialog.style.top = `${clamp(playerMenuAnchor.y + 12, top + 12, Math.max(top + 12, top + height - rect.height - 12))}px`;
+}
+
+function setLabelMode(next) {
+  editingLabelMode = next;
+  document.querySelectorAll("[data-label-mode]").forEach((button) => {
+    const selected = button.dataset.labelMode === next;
+    button.classList.toggle("on", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+  $("position-field").hidden = next !== "position";
+  $("number-field").hidden = next !== "number";
+  $("player-position").disabled = next !== "position";
+  $("player-number").disabled = next !== "number";
+  $("player-error").textContent = "";
+  positionPlayerMenu();
+}
+
+function openPlayerMenu(player, x, y) {
+  // Consume the held gesture before showing UI: releasing must not pass or drag.
+  cancelGesture();
+  ballSelected = false;
+  editingPlayerId = player.id;
+  playerMenuAnchor = { x, y };
+  $("player-title").textContent = `${TEAM[player.team]} · ${playerName(player)}`;
+  const choices = $("player-position");
+  choices.replaceChildren();
+  for (const [value, name] of Object.entries(preset.positions || {})) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = `${value} — ${name}`;
+    choices.append(option);
+  }
+  $("label-position").disabled = !choices.children.length;
+  choices.value = player.position || Object.keys(preset.positions || {})[0] || "";
+  $("player-number").value = String(player.n);
+  setLabelMode(player.display === "position" && choices.children.length ? "position" : "number");
+  $("playerDialog").showModal();
+  positionPlayerMenu();
+  draw();
+}
+
+document.querySelectorAll("[data-label-mode]").forEach((button) => {
+  button.onclick = () => {
+    setLabelMode(button.dataset.labelMode);
+    const field = $(editingLabelMode === "position" ? "player-position" : "player-number");
+    field.focus();
+    if (editingLabelMode === "number") field.select();
+  };
+});
+$("player-close").onclick = () => $("playerDialog").close();
+$("playerDialog").addEventListener("close", () => { editingPlayerId = null; playerMenuAnchor = null; });
+$("player-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const player = board.players.find((p) => p.id === editingPlayerId);
+  if (!player) return $("playerDialog").close();
+  const position = $("player-position").value;
+  const rawNumber = $("player-number").value.trim();
+  if (editingLabelMode === "number" && !/^\d{1,2}$/.test(rawNumber)) {
+    $("player-error").textContent = "Choose a whole number from 0 to 99.";
+    return;
+  }
+  if (editingLabelMode === "position" && !Object.hasOwn(preset.positions || {}, position)) return;
+  const valueChanged = editingLabelMode === "position" ? position !== player.position : Number(rawNumber) !== player.n;
+  if (player.display !== editingLabelMode || valueChanged) {
+    checkpoint();
+    player.display = editingLabelMode;
+    if (editingLabelMode === "position") player.position = position;
+    else player.n = Number(rawNumber);
+  }
+  $("playerDialog").close();
+  draw();
+  note(`${TEAM[player.team]} player now shows ${playerName(player)}.`);
+});
+window.visualViewport?.addEventListener("resize", positionPlayerMenu);
+window.visualViewport?.addEventListener("scroll", positionPlayerMenu);
 
 $("undo").onclick = () => historyStep(undo, redo);
 $("redo").onclick = () => historyStep(redo, undo);
@@ -597,7 +739,7 @@ document.querySelectorAll("[data-format]").forEach((btn) =>
     note(`${preset.name} ready.`);
   }));
 
-$("menu").onclick = () => { syncMenu(); $("menuDialog").showModal(); };
+$("menu").onclick = () => { cancelGesture(); syncMenu(); $("menuDialog").showModal(); };
 $("help").onclick = () => { $("menuDialog").close(); $("helpDialog").showModal(); };
 
 // ---------- saved boards (IndexedDB) ----------
@@ -645,8 +787,8 @@ async function renderSlots() {
       open.onclick = async () => {
         if (undo.length && !confirm("Open this board? Your unsaved board will be replaced.")) return;
         preset = await loadPreset(entry.board.format);
-        board = clone(entry.board);
-        start = clone(entry.start);
+        board = withPlayerLabels(entry.board, preset);
+        start = withPlayerLabels(entry.start, preset);
         undo = [];
         redo = [];
         ballSelected = false;
@@ -696,6 +838,7 @@ async function saveTo(slot, existing) {
 }
 
 async function openSaves() {
+  cancelGesture();
   try {
     await renderSlots();
     $("savesDialog").showModal();
@@ -771,7 +914,7 @@ new ResizeObserver(resize).observe(canvas);
   try {
     await setFormat("9v9");
     resize();
-    note("Tap a teammate to pass. Drag anything to move it.", 4500);
+    note("Drag to move · tap to pass · hold a player to edit", 4500);
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
       navigator.serviceWorker.register("./sw.js").catch(() => {});
     }
