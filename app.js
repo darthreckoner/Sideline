@@ -1,11 +1,14 @@
-// Sideline v0.2 — single-canvas coaching board.
-// Field coordinates are a fixed 1000 × 620 space; presets supply lines and formations.
+// Sideline — shared single-canvas coaching board.
+// Presets supply dimensions, formations and a field renderer; controls are sport-independent.
 
 const $ = (id) => document.getElementById(id);
 const canvas = $("board");
 const ctx = canvas.getContext("2d");
 
-const P = { w: 1000, h: 620 };
+const P = {
+  get w() { return preset?.field.width || 1000; },
+  get h() { return preset?.field.height || 620; },
+};
 const R = 28;                // player dot radius (field units)
 const BALL_R = 15;
 const BALL_OFF = 34;         // ball offset from its carrier
@@ -82,15 +85,16 @@ function updateButtons() {
 
 // ---------- board model ----------
 
-function makeBoard(data) {
-  const home = data.formations[data.defaultFormation].map(([x, y], i) => ({
+function makeBoard(data, formation = data.defaultFormation) {
+  const home = data.formations[formation].map(([x, y], i) => ({
     id: "h" + i, n: i + 1, team: "home", x, y,
   }));
-  const away = home.map((p) => ({ ...p, id: "a" + p.n, team: "away", x: P.w - p.x, y: P.h - p.y }));
-  const centre = { x: P.w / 2, y: P.h / 2 };
+  const away = home.map((p) => ({ ...p, id: "a" + p.n, team: "away", x: data.field.width - p.x, y: data.field.height - p.y }));
+  const centre = { x: data.field.width / 2, y: data.field.height / 2 };
   const kicker = home.reduce((best, p) => (dist(p, centre) < dist(best, centre) ? p : best));
   return {
     format: data.id,
+    formation,
     players: [...home, ...away],
     ball: { x: kicker.x, y: kicker.y, carrier: kicker.id },
     ink: [],
@@ -101,6 +105,7 @@ function makeBoard(data) {
 async function loadPreset(format) {
   const data = window.SIDELINE_PRESETS?.[format];
   if (!data) throw Error(`Preset ${format} unavailable`);
+  if (!window.SIDELINE_FIELDS?.[data.field.type]) throw Error(`Field renderer ${data.field.type} unavailable`);
   return clone(data);
 }
 
@@ -112,6 +117,7 @@ async function setFormat(format) {
   redo = [];
   ballSelected = false;
   anim = null;
+  setMode("move");
   syncMenu();
   updateButtons();
   draw();
@@ -198,29 +204,7 @@ function isDark(hex) {
 }
 
 function pitch(c) {
-  const f = preset.field;
-  const w = P.w, h = P.h;
-  c.fillStyle = "#1c6749";
-  c.fillRect(0, 0, w, h);
-  for (let i = 0; i < 10; i++) {
-    c.fillStyle = i % 2 ? "#ffffff08" : "#0000000c";
-    c.fillRect(i * 100, 0, 100, h);
-  }
-  c.strokeStyle = "#f0f5e9";
-  c.fillStyle = "#f0f5e9";
-  c.lineWidth = 4;
-  c.strokeRect(14, 14, w - 28, h - 28);
-  c.beginPath(); c.moveTo(500, 14); c.lineTo(500, h - 14); c.stroke();
-  c.beginPath(); c.arc(500, 310, f.centerCircleRadius, 0, Math.PI * 2); c.stroke();
-  c.beginPath(); c.arc(500, 310, 5, 0, Math.PI * 2); c.fill();
-  for (const left of [true, false]) {
-    const x = left ? 14 : w - 14 - f.penaltyDepth;
-    const gx = left ? 14 : w - 14 - f.goalAreaDepth;
-    c.strokeRect(x, (h - f.penaltyWidth) / 2, f.penaltyDepth, f.penaltyWidth);
-    c.strokeRect(gx, (h - f.goalAreaWidth) / 2, f.goalAreaDepth, f.goalAreaWidth);
-    c.beginPath(); c.arc(left ? 115 : 885, 310, 5, 0, Math.PI * 2); c.fill();
-    c.strokeRect(left ? 2 : w - 14, 255, 12, 110);
-  }
+  window.SIDELINE_FIELDS[preset.field.type](c, preset.field);
 }
 
 function arrow(c, a, b) {
@@ -474,11 +458,19 @@ function eraseAt(p) {
 
 // ---------- controls ----------
 
+function setMode(next) {
+  mode = next;
+  ballSelected = false;
+  document.querySelectorAll("[data-mode]").forEach((btn) => {
+    const selected = btn.dataset.mode === mode;
+    btn.classList.toggle("active", selected);
+    btn.setAttribute("aria-pressed", String(selected));
+  });
+}
+
 document.querySelectorAll("[data-mode]").forEach((btn) =>
   btn.addEventListener("click", () => {
-    mode = btn.dataset.mode;
-    ballSelected = false;
-    document.querySelectorAll("[data-mode]").forEach((t) => t.classList.toggle("active", t === btn));
+    setMode(btn.dataset.mode);
     note({ move: "Move: drag anything, tap a teammate to pass.", arrow: "Swipe to place an arrow.",
       pen: "Swipe to draw.", erase: "Touch a line to erase it." }[mode]);
     draw();
@@ -498,6 +490,7 @@ $("clear").onclick = () => {
 $("capture").onclick = () => {
   checkpoint();
   start = clone(board);
+  setMode("move");
   updateButtons();
   draw();
   note("Start set. Run the play, then tap Reset.");
@@ -507,21 +500,67 @@ $("reset-start").onclick = () => {
   if (!start) return;
   checkpoint();
   board = clone(start);
-  ballSelected = false;
+  setMode("move");
   anim = null;
   syncMenu();
   draw();
   note("Back to start. Undo brings the demo back.");
 };
 
-// Menu: format + colors
+// Menu: format, formation and colors. Choices come from the registered presets.
+for (const data of Object.values(window.SIDELINE_PRESETS)) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.dataset.format = data.id;
+  button.textContent = data.name;
+  $("formatSeg").append(button);
+}
+
 function syncMenu() {
   if (!board) return;
-  document.querySelectorAll("[data-format]").forEach((b) => b.classList.toggle("on", b.dataset.format === board.format));
+  canvas.setAttribute("aria-label", `Interactive ${preset.name} coaching board`);
+  document.querySelectorAll("[data-format]").forEach((b) => {
+    const selected = b.dataset.format === board.format;
+    b.classList.toggle("on", selected);
+    b.setAttribute("aria-pressed", String(selected));
+  });
+  const choices = $("formation");
+  if (choices.dataset.format !== board.format) {
+    choices.replaceChildren();
+    for (const name of Object.keys(preset.formations)) {
+      const option = document.createElement("option");
+      option.value = name;
+      option.textContent = name;
+      choices.append(option);
+    }
+    choices.dataset.format = board.format;
+  }
+  // Older saved boards did not record a formation; their positions stay untouched.
+  choices.value = board.formation || preset.defaultFormation;
   for (const team of ["home", "away"]) {
     $("sw-" + team).querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.color === board.colors[team]));
   }
 }
+
+function resetFormation(formation) {
+  checkpoint();
+  const colors = { ...board.colors };
+  board = makeBoard(preset, formation);
+  board.colors = colors;
+  start = null;
+  anim = null;
+  setMode("move");
+  syncMenu();
+  updateButtons();
+  draw();
+  note(`${formation} formation ready. Undo restores your previous board.`);
+}
+
+$("formation").onchange = () => resetFormation($("formation").value);
+$("reset-formation").onclick = () => {
+  resetFormation(board.formation || preset.defaultFormation);
+  $("menuDialog").close();
+};
 
 for (const team of ["home", "away"]) {
   const row = $("sw-" + team);
@@ -555,7 +594,7 @@ document.querySelectorAll("[data-format]").forEach((btn) =>
     syncMenu();
     draw();
     $("menuDialog").close();
-    note(`Soccer ${format} ready.`);
+    note(`${preset.name} ready.`);
   }));
 
 $("menu").onclick = () => { syncMenu(); $("menuDialog").showModal(); };
@@ -612,6 +651,7 @@ async function renderSlots() {
         redo = [];
         ballSelected = false;
         anim = null;
+        setMode("move");
         syncMenu();
         updateButtons();
         draw();
@@ -681,9 +721,9 @@ $("save").onclick = async () => {
 function imageFile() {
   const off = document.createElement("canvas");
   off.width = 1600;
-  off.height = 992;
+  off.height = Math.round(off.width * P.h / P.w);
   const c = off.getContext("2d");
-  c.scale(1.6, 1.6);
+  c.scale(off.width / P.w, off.width / P.w);
   contents(c, { rot: false, live: false });
   return new Promise((resolve) =>
     off.toBlob((b) => resolve(new File([b], `sideline-${board.format}.png`, { type: "image/png" })), "image/png"));

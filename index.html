@@ -27,8 +27,8 @@
     <button data-mode="erase"><i>⌫</i><span>Erase</span></button>
     <button id="undo"><i>↶</i><span>Undo</span></button>
     <button id="redo"><i>↷</i><span>Redo</span></button>
-    <button id="capture"><i>◎</i><span>Set start</span></button>
-    <button id="reset-start"><i>⟲</i><span>Reset</span></button>
+    <button id="capture" title="Demonstrate: save this setup and start moving players"><i>◎</i><span>Set start</span></button>
+    <button id="reset-start" title="Reset the demonstration to your saved starting positions"><i>⟲</i><span>Reset</span></button>
     <button id="clear"><i>✕</i><span>Clear ink</span></button>
     <button id="save"><i>★</i><span>Save</span></button>
     <button id="share" class="primary"><i>⇪</i><span>Share</span></button>
@@ -40,10 +40,13 @@
   <form method="dialog">
     <div class="dialog-title"><h2>Board</h2><button class="x" aria-label="Close">✕</button></div>
     <h3>Format</h3>
-    <div class="seg" id="formatSeg">
-      <button type="button" data-format="9v9">Soccer 9v9</button>
-      <button type="button" data-format="7v7">Soccer 7v7</button>
+    <div class="seg" id="formatSeg"></div>
+    <h3><label for="formation">Formation · both teams</label></h3>
+    <div class="formation-controls">
+      <select id="formation" aria-describedby="formation-help"></select>
+      <button type="button" id="reset-formation">Reset formation</button>
     </div>
+    <p id="formation-help">Start a fresh board in this formation. Keeps team colors; clears drawings and the demo start. Undo restores your board.</p>
     <h3>Home color</h3>
     <div class="swatches" id="sw-home"></div>
     <h3>Away color</h3>
@@ -59,7 +62,7 @@
 <dialog id="savesDialog">
   <form method="dialog">
     <div class="dialog-title"><h2>Saved boards</h2><button class="x" aria-label="Close">✕</button></div>
-    <p>Five saves on this device. Add Sideline to your Home Screen so iPhone doesn't clear them.</p>
+    <p>Five saves on this device. Browser or device cleanup can erase them, even after Home Screen installation. Share a PNG to keep a picture of a board.</p>
     <div id="slots"></div>
   </form>
 </dialog>
@@ -70,14 +73,16 @@
     <p><strong>Pass:</strong> tap a teammate of the player with the ball. Each tap is one pass.</p>
     <p><strong>Move:</strong> drag any player or the ball. Drop the ball on a player to give it to them.</p>
     <p><strong>Steal / give the ball:</strong> tap the ball, then tap any player (or an open spot).</p>
-    <p><strong>Demonstrate:</strong> set up the play, tap <em>Set start</em>, run it, then tap <em>Reset</em>. Undo brings the demo back.</p>
+    <p><strong>Demonstrate:</strong> set up the play, tap <em>Set start</em>, drag or pass, then tap <em>Reset</em>. Repeat as often as you like. Undo brings the demo back.</p>
+    <p><strong>Formation:</strong> choose a formation in Menu, or use <em>Reset formation</em> for a fresh board. Number 1 is the goalkeeper on each team.</p>
     <p><strong>Draw:</strong> pick Arrow or Draw and swipe. Erase removes a line you touch.</p>
-    <p>Works sideways or upright. Add to Home Screen for offline use and to keep your saves.</p>
+    <p>Turn your phone sideways for a wide field. It also works upright. Open once online, then add to Home Screen for offline use. Local saves are not a guaranteed backup.</p>
     <button class="primary wide" value="close">Got it</button>
   </form>
 </dialog>
 
 <!-- Plain scripts (not modules/fetch) so the app also works opened straight from disk (file://). -->
+<script defer src="./presets/soccer-field.js"></script>
 <script defer src="./presets/soccer-9v9.js"></script>
 <script defer src="./presets/soccer-7v7.js"></script>
 <script defer src="./app.js"></script>

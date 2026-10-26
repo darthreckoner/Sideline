@@ -1,14 +1,17 @@
-// Stale-while-revalidate: open instantly from cache (works offline on the sideline),
-// then refresh the cache in the background so the next launch gets the latest version.
-const CACHE = "sideline-v0.2.1";
+// Cache each release as a complete set so HTML, scripts and presets stay compatible.
+// An updated worker waits until existing Sideline windows close before taking over.
+const CACHE = "sideline-v0.3.0";
 const FILES = [
   "./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest",
-  "./presets/soccer-9v9.js", "./presets/soccer-7v7.js",
+  "./presets/soccer-field.js", "./presets/soccer-9v9.js", "./presets/soccer-7v7.js",
   "./icons/icon-192.png", "./icons/icon-512.png",
 ];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+  // Bypass the HTTP cache as well as the previous worker's cache. Otherwise a new
+  // release can accidentally precache old scripts that the browser considers fresh.
+  const requests = FILES.map((file) => new Request(new URL(file, self.registration.scope), { cache: "reload" }));
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(requests)));
 });
 
 self.addEventListener("activate", (e) => {
@@ -21,21 +24,16 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   const req = e.request;
-  if (req.method !== "GET" || new URL(req.url).origin !== location.origin) return;
+  const url = new URL(req.url);
+  const shell = new Set(FILES.map((file) => new URL(file, self.registration.scope).href));
+  url.search = "";
+  if (req.method !== "GET" || !shell.has(url.href)) return;
   e.respondWith(
     caches.open(CACHE).then(async (cache) => {
       const cached = await cache.match(req, { ignoreSearch: true });
-      const network = fetch(req)
-        .then((res) => {
-          if (res.ok) cache.put(req, res.clone());
-          return res;
-        })
-        .catch(() => null);
-      if (cached) {
-        e.waitUntil(network);
-        return cached;
-      }
-      return (await network) || (await cache.match("./index.html")) || Response.error();
+      if (cached) return cached;
+      try { return await fetch(req); }
+      catch { return Response.error(); }
     }),
   );
 });

@@ -1,5 +1,7 @@
 # Sideline v0.1 — implementation specification
 
+Historical first-build specification. See `README.md` for current prototype behavior, including portrait support, one-tap passing, formation selection, and separate formation/demo resets.
+
 ## Audience and promise
 Volunteer youth recreation coaches. Get from opening the board to demonstrating a 9v9 soccer play in under 30 seconds, one-handed on an iPhone outdoors. 7v7 is the secondary included format.
 
