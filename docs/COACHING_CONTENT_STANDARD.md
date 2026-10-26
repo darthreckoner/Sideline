@@ -70,11 +70,11 @@ Use these statuses:
 
 Under the user's implementation go-ahead, verified sources may enter the local app as clearly identified source-linked illustrations while independent coaching acceptance remains pending. Record that implementation state separately from Reviewed adaptation and Ready to bundle. Source verification and automated app checks do not complete the coach review.
 
-Only Ready to bundle entries may be described as fully reviewed lessons. The local app counts its five source-linked entries as sourced activities and exposes their pending independent acceptance in Source and adaptation. Start with a small supported pack; do not promise eight topics or both 7v7 and 9v9 versions of every topic. Preserve a coach's ability to create their own board separately from the prebuilt library.
+Only Ready to bundle entries may be described as fully reviewed lessons. The local app has five source-linked activities and exposes their pending independent acceptance in How to play & source. Start with a small supported pack; do not promise eight topics or both 7v7 and 9v9 versions of every topic. Preserve a coach's ability to create their own board separately from the prebuilt library.
 
 ## Source details in the app
 
-Every prebuilt card and its detail view must identify its intended ages and original activity size. A Source and adaptation action shows the publisher, original title, source link, date checked and a brief description of what Sideline changed. Include the same reference metadata offline; opening the publisher's website may require a connection.
+Every prebuilt card and its detail view must identify its intended ages and original activity size. The How to play & source action shows the publisher, original title, source link, date checked and a brief description of what Sideline changed. Include the same reference metadata offline; opening the publisher's website may require a connection.
 
 For a personal copy of a prebuilt, retain the original source and adaptation metadata and mark the copy as coach edited. The original review does not approve subsequent user changes. Source details should be available without filling the live Board with documentation. An image of a diagram is not evidence of publisher endorsement.
 

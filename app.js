@@ -733,7 +733,7 @@ function syncMenu() {
   }
 }
 
-function resetFormation(formation) {
+function resetFormation(formation, message = `${formation} formation ready. Undo restores your previous board.`) {
   checkpoint();
   const colors = { ...board.colors };
   board = makeBoard(preset, formation);
@@ -744,8 +744,14 @@ function resetFormation(formation) {
   syncMenu();
   updateButtons();
   draw();
-  note(`${formation} formation ready. Undo restores your previous board.`);
+  note(message);
 }
+
+$("default-field").onclick = () => {
+  if (!board?.activity) return;
+  resetFormation(preset.defaultFormation, "Default field ready. Tap Undo to return to your activity.");
+  $("tab-board").focus({ preventScroll: true });
+};
 
 function applyFormation(side, formation) {
   if (board.activity) return resetFormation(formation);
@@ -884,7 +890,9 @@ function installSnapshot(next, message = "Board opened. Undo restores the previo
   if (recordHistory) checkpoint(); else { undo = []; redo = []; }
   valid.board = withPlayerLabels(valid.board, window.SIDELINE_PRESETS[valid.board.format]);
   valid.start = withPlayerLabels(valid.start, window.SIDELINE_PRESETS[valid.board.format]);
-  restore(valid); setMode("move"); note(message);
+  restore(valid); setMode("move");
+  if (message) note(message);
+  else { clearTimeout(toastTimer); $("message").classList.remove("show"); }
 }
 
 function openActivity(activity) {
@@ -895,7 +903,7 @@ function openActivity(activity) {
   next.activity = { id: activity.id, title: activity.title, revision: 1, edited: false };
   next.view = "full"; next.guides = "none";
   next.colors = clone(board.colors);
-  installSnapshot({ board: next, start: clone(next) }, `${activity.title} ready. Move and pass, then Reset. Undo restores your board.`);
+  installSnapshot({ board: next, start: clone(next) }, "");
 }
 
 function applyLineup(team, side) {

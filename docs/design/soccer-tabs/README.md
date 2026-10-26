@@ -12,7 +12,7 @@ The default workspace keeps the pitch, moving and passing, drawing, history, Set
 
 Situations and My playbook live in Coaching. Teaching aids configure guides, focus views and player visibility. Each situation provides a short cue and player question; Open on board sends its editable starting setup to the separate Board workspace.
 
-The displayed titles, cue, diagrams and eight-situation count are visual placeholders. They have not been approved as teaching content. The [youth coaching content standard](../../../docs/COACHING_CONTENT_STANDARD.md) governs source selection, age and activity-size details, attribution and acceptance status. The implemented library includes five verified FIFA-linked illustrations, age filtering and Source and adaptation details; unsourced concepts are excluded.
+The displayed titles, cue, diagrams and eight-situation count are visual placeholders. They have not been approved as teaching content. The [youth coaching content standard](../../../docs/COACHING_CONTENT_STANDARD.md) governs source selection, age and activity-size details, attribution and acceptance status. The implemented library includes five verified FIFA-linked illustrations, age filtering and How to play & source details; unsourced concepts are excluded.
 
 ![Proposed Coaching tab](02-coaching.png)
 

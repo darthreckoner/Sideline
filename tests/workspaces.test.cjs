@@ -49,6 +49,36 @@ test("each native activity opens with a captured start, repeats, and is undoable
   }
 });
 
+test("default field leaves an activity in the current format and Undo restores it", async () => {
+  for (const [format, count, formation] of [["9v9", 18, "3-3-2"], ["7v7", 14, "2-3-1"]]) {
+    const a = await app();
+    await a.run(`setFormat(${JSON.stringify(format)})`);
+    a.run(`board.colors.home = "#ef4444"; window.SIDELINE_BOARD.openActivity(window.SIDELINE_SITUATIONS[4]);
+      checkpoint(); board.view = "attack"; board.ink = [{type:"arrow",a:{x:100,y:100},b:{x:200,y:200}}]; setMode("pen")`);
+    const activity = a.state();
+
+    a.get("default-field").onclick();
+    const field = a.state();
+    assert.equal(field.board.format, format);
+    assert.equal(field.board.formation, formation);
+    assert.equal(field.board.players.length, count);
+    assert.deepEqual(field.board.colors, activity.board.colors);
+    assert.equal(field.board.activity, undefined);
+    assert.equal(field.board.markings, undefined);
+    assert.equal(field.board.view, undefined);
+    assert.deepEqual(field.board.ink, []);
+    assert.equal(field.start, null);
+    assert.equal(a.run("mode"), "move");
+
+    a.get("undo").onclick();
+    assert.deepEqual(a.state(), activity);
+    a.get("redo").onclick();
+    assert.deepEqual(a.state(), field);
+    a.get("default-field").onclick();
+    assert.deepEqual(a.state(), field);
+  }
+});
+
 test("board files preserve source identity, labels, markings, guides, and demonstration start", async () => {
   const a = await app(); a.run("window.SIDELINE_BOARD.openActivity(window.SIDELINE_SITUATIONS[3])");
   a.run('window.SIDELINE_BOARD.options({guides:"lanes",view:"attack"})');

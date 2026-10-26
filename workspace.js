@@ -22,7 +22,7 @@
     const targets = channel === "board" ? ["save-status"] : channel === "team" ? ["team-status"] : ["save-status", "team-status"];
     for (const name of targets) { el(name).textContent = text; el(name).classList.toggle("error", error); }
   }
-  function failure(error, channel = "both") { storageStatus("Save failed · export a backup", true, channel); notice(error.message || "Local storage is unavailable. Export a file to keep your work."); }
+  function failure(error, channel = "both") { storageStatus("Couldn't save · export a backup", true, channel); notice(error.message || "Sideline couldn't save on this device. Export a file to keep your work."); }
   async function confirmChange(message, accept = "Continue") {
     const dialog = el("confirmDialog");
     if (dialog.open) return false;
@@ -75,7 +75,7 @@
 
   function updateCue() {
     const state = B.snapshot().board, activity = situations.find((s) => s.id === state.activity?.id);
-    el("active-lesson").hidden = !activity;
+    el("activity-controls").hidden = !activity;
     if (!activity) return;
     el("active-lesson-title").textContent = `${activity.title} · ${activity.ages} · ${activity.size}`;
     el("active-lesson-cue").textContent = activity.cue;
@@ -117,8 +117,8 @@
     reference.append(create("p", "quiet", `${activity.ages} · ${activity.size} · Published ${activity.source.date}`));
     reference.append(create("p", "quiet", activity.section));
     if (activity.source.coach) reference.append(create("p", "quiet", `Source coach: ${activity.source.coach}`));
-    const link = create("a", "", "Read the original youth lesson ↗"); link.href = activity.source.url; link.target = "_blank"; link.rel = "noopener noreferrer"; reference.append(link);
-    body.append(reference, create("h3", "", "Activity conditions"), create("p", "", activity.conditions), create("h3", "", "What Sideline changed"), create("p", "", activity.changes), create("p", "quiet", activity.adaptation), create("p", "quiet", `${edited ? "Coach-edited copy. " : ""}Reference checked ${activity.checked}. The link needs a connection; these details are available offline.`));
+    const link = create("a", "", "Read the original FIFA lesson ↗"); link.href = activity.source.url; link.target = "_blank"; link.rel = "noopener noreferrer"; reference.append(link);
+    body.append(reference, create("h3", "", "How to play"), create("p", "", activity.conditions), create("h3", "", "What this board shows"), create("p", "", activity.changes), create("p", "quiet", activity.adaptation), create("p", "quiet", `${edited ? "This is your copy; any changes you make are your own. " : ""}Source checked ${activity.checked}. You can read these details offline, but the FIFA link needs internet.`));
     el("sourceDialog").showModal();
   }
   function activitySnapshot(activity) {
@@ -135,12 +135,12 @@
     for (const activity of list) {
       const card = create("article", "situation-card"), image = create("canvas"); image.width = 1000; image.height = 620; image.setAttribute("aria-label", `${activity.title} schematic preview`);
       card.append(create("p", "meta", `${activity.ages} · ${activity.size}`), create("h2", "", activity.title), image, create("p", "", activity.cue), create("p", "question", activity.question));
-      const actions = create("div", "button-row"), open = create("button", "accent", "Open on board"), source = create("button", "", "Source and adaptation");
-      open.onclick = () => { B.openActivity(activity); el("active-lesson").open = false; switchTab("board"); notice("Activity opened. Reset repeats it; Undo restores the previous board."); };
+      const actions = create("div", "button-row"), open = create("button", "accent", "Open on board"), source = create("button", "", "How to play & source");
+      open.onclick = () => { B.openActivity(activity); el("active-lesson").open = false; switchTab("board"); };
       source.onclick = () => showSource(activity);
       actions.append(open, source); card.append(actions); root.append(card); B.preview(image, activitySnapshot(activity));
     }
-    el("situation-count").textContent = `${list.length} sourced ${list.length === 1 ? "activity" : "activities"}`;
+    el("situation-count").textContent = `${list.length} ${list.length === 1 ? "activity" : "activities"}`;
     el("situation-empty").hidden = !!list.length;
   }
   el("age-filter").onchange = el("topic-filter").onchange = renderSituations;
@@ -169,7 +169,7 @@
   }
   el("show-situations").onclick = () => setCollection("situations"); el("show-playbook").onclick = () => setCollection("playbook");
   function openPlaybook() { setCollection("playbook"); switchTab("coaching"); }
-  async function saveRecord(record) { await Store.run("boards", "put", record); notice("Named board saved on this device."); if (collection === "playbook") await renderPlaybook(); }
+  async function saveRecord(record) { await Store.run("boards", "put", record); notice("Board saved on this device."); if (collection === "playbook") await renderPlaybook(); }
   function saveBoard() {
     try {
       const snapshot = D.readSnapshot(B.snapshot(), presets);
@@ -195,7 +195,7 @@
         action("Rename", () => chooseName("Rename board", record.name, (name) => saveRecord({ ...record, name, updated: Date.now() })));
         action("Copy", () => saveRecord({ ...D.copy(record), slot: D.id(), name: `${record.name} copy`.slice(0, 80), updated: Date.now() }));
         action("Export", () => exportJSON({ kind: "sideline-board", version: 1, name: record.name, snapshot: D.readSnapshot(record, presets) }, "sideline-board.json"));
-        action("Delete", async () => { if (await confirmChange(`Delete “${record.name}” from this device? Export it first if you need a backup.`, "Delete board")) { await Store.run("boards", "delete", record.slot); await renderPlaybook(); } });
+        action("Delete", async () => { if (await confirmChange(`Delete "${record.name}" from this device? Export it first if you want a backup.`, "Delete board")) { await Store.run("boards", "delete", record.slot); await renderPlaybook(); } });
         row.append(image, description, actions); root.append(row); B.preview(image, record.board);
       }
     } catch (error) { failure(error); }
@@ -224,7 +224,7 @@
     try {
       if (file.size > 2_000_000) throw Error("Choose a Sideline file smaller than 2 MB.");
       const doc = D.readFile(await file.text(), presets);
-      const description = doc.kind === "sideline-board" ? `Open “${doc.name}”? Undo restores the current board.` : doc.kind === "sideline-team" ? `Import “${doc.team.name}” as a new team? Your current board is unchanged.` : `Import ${doc.boards.length} boards as new playbook copies?`;
+      const description = doc.kind === "sideline-board" ? `Open "${doc.name}"? Tap Undo to bring back your current board.` : doc.kind === "sideline-team" ? `Import "${doc.team.name}" as a new team? Your board won't change.` : `Import ${doc.boards.length} boards as copies in your playbook?`;
       if (!(await confirmChange(description, "Import"))) return;
       if (doc.kind === "sideline-board") { B.install(doc.snapshot); switchTab("board"); }
       else if (doc.kind === "sideline-team") {
@@ -236,7 +236,7 @@
         await Store.putAll("boards", doc.boards.map((item) => ({ slot: D.id(), name: item.name, ...item.snapshot, updated: Date.now() })));
         openPlaybook();
       }
-      notice("Imported as a copy.");
+      notice(doc.kind === "sideline-board" ? "Board opened. Tap Undo to bring back your previous board." : "Imported a copy.");
     } catch (error) { notice(error.message || "Could not import this file."); }
   };
 
@@ -261,7 +261,7 @@
       const person = create("div", "person"); person.append(create("strong", "", `#${player.number} ${player.name}`), create("small", "", `${!player.available ? "Unavailable" : assigned.has(player.id) ? "Starting" : "Bench"}${player.role ? " · Try " + player.role : ""}`));
       const edit = create("button", "", "Edit"); edit.setAttribute("aria-label", `Edit ${player.name}`); edit.onclick = () => openPlayer(player);
       const remove = create("button", "delete", "Remove"); remove.setAttribute("aria-label", `Remove ${player.name}`);
-      remove.onclick = async () => { if (await confirmChange(`Remove ${player.name} from this team? Your saved boards keep their captured players.`, "Remove player")) { team.roster = team.roster.filter((p) => p.id !== player.id); team.assignments = team.assignments.map((pid) => pid === player.id ? null : pid); for (const saved of team.lineups || []) { saved.assignments = saved.assignments.map((pid) => pid === player.id ? null : pid); saved.available = saved.available.filter((pid) => pid !== player.id); } team.activeLineup = ""; renderTeam(); scheduleTeamSave(); } };
+      remove.onclick = async () => { if (await confirmChange(`Remove ${player.name} from this team? Your saved boards won't change.`, "Remove player")) { team.roster = team.roster.filter((p) => p.id !== player.id); team.assignments = team.assignments.map((pid) => pid === player.id ? null : pid); for (const saved of team.lineups || []) { saved.assignments = saved.assignments.map((pid) => pid === player.id ? null : pid); saved.available = saved.available.filter((pid) => pid !== player.id); } team.activeLineup = ""; renderTeam(); scheduleTeamSave(); } };
       row.append(available, person, edit, remove); roster.append(row);
     }
     const slots = el("lineup-slots"); slots.replaceChildren();
@@ -290,7 +290,7 @@
   el("team-picker").onchange = () => { selectedTeam = el("team-picker").value; renderTeam(); scheduleTeamSave(); };
   el("new-team").onclick = () => { const team = D.newTeam(presets); teams.push(team); selectedTeam = team.id; renderTeam(); scheduleTeamSave(); el("team-settings").open = true; el("team-name").focus(); el("team-name").select(); };
   el("copy-team").onclick = () => { const copied = D.copyTeam(currentTeam(), presets); copied.name = `${copied.name} copy`.slice(0, 48); teams.push(copied); selectedTeam = copied.id; renderTeam(); scheduleTeamSave(); };
-  el("delete-team").onclick = async () => { if (await confirmChange(`Delete “${currentTeam().name}” and its roster from this device? Saved boards keep their captured players.`, "Delete team")) { teams = teams.filter((t) => t.id !== selectedTeam); if (!teams.length) teams.push(D.newTeam(presets)); selectedTeam = teams[0].id; renderTeam(); scheduleTeamSave(); } };
+  el("delete-team").onclick = async () => { if (await confirmChange(`Delete "${currentTeam().name}" and its roster from this device? Your saved boards won't change.`, "Delete team")) { teams = teams.filter((t) => t.id !== selectedTeam); if (!teams.length) teams.push(D.newTeam(presets)); selectedTeam = teams[0].id; renderTeam(); scheduleTeamSave(); } };
   el("save-lineup").onclick = () => chooseName("Save lineup as", "", async (name) => {
     const team = D.copy(currentTeam()); team.lineups ||= [];
     if (team.lineups.length >= 30) throw Error("This team already has 30 saved lineups. Export it before making another team copy.");
@@ -311,7 +311,7 @@
   function changeTeamShape() {
     const team = currentTeam(), format = el("team-format").value;
     const formation = team.format === format ? el("team-formation").value : presets[format].defaultFormation;
-    setCurrentTeam({ ...D.changeShape(team, format, formation, presets), activeLineup: "" }); renderTeam(); scheduleTeamSave(); notice("Review assignments for the new shape. Your board is unchanged.");
+    setCurrentTeam({ ...D.changeShape(team, format, formation, presets), activeLineup: "" }); renderTeam(); scheduleTeamSave(); notice("Check your lineup for the new formation. Your board hasn't changed.");
   }
   el("team-format").onchange = el("team-formation").onchange = changeTeamShape;
   const colorNames = ["Gold", "Orange", "Red", "Pink", "Violet", "Blue", "Sky", "Navy", "White", "Black"];
@@ -344,8 +344,8 @@
     try {
       const team = D.copy(currentTeam()), side = el("apply-side").value, plan = D.lineup(team, presets), board = B.snapshot().board;
       const fresh = board.format !== team.format || board.activity;
-      const warning = fresh ? "This creates a full-team board and clears the current drawings and activity." : "The opposite team's arrangement and your drawings stay in place.";
-      const message = `Apply ${team.name} to ${side === "home" ? "Home" : "Away"}: ${team.format}, ${team.formation}, ${plan.players.filter(Boolean).length} starters, ${plan.bench.length} bench? ${warning} The demo start is cleared. Undo restores your previous board.`;
+      const warning = fresh ? "This starts a full-team board and clears the current drawings and activity." : "The other team's positions and your drawings will stay as they are.";
+      const message = `Apply ${team.name} to ${side === "home" ? "Home" : "Away"}? ${team.format}, ${team.formation}, ${plan.players.filter(Boolean).length} starting and ${plan.bench.length} on the bench. ${warning} Your saved starting point will be cleared. Tap Undo to bring back your previous board.`;
       if (!(await confirmChange(message, "Apply to board"))) return;
       try { await persistTeams(); } catch { /* Keep the unsaved team in memory; applying is still useful. */ }
       B.applyLineup(team, side); switchTab("board");

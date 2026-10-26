@@ -1,20 +1,22 @@
-# Sideline v0.5 — Youth Soccer Coaching Board (PWA)
+# Sideline v0.5: youth soccer coaching board
 
-Offline-capable coaching whiteboard for iPhone, iPad and desktop. 9v9 by default, with 7v7 in Team → Quick board setup. No accounts or runtime dependencies. v0.5 is published at [Sideline](https://darthreckoner.github.io/Sideline/) for phone testing; see the deployment record in [verification](docs/verification/2026-10-26/README.md).
+Sideline is a soccer whiteboard for iPhone, iPad and desktop. Use it to show your players where to move and pass, then take the idea onto the field. It works offline after setup and doesn't need an account. The board starts at 9v9; you can choose 7v7 under Team → Quick board setup. The published app is at [Sideline](https://darthreckoner.github.io/Sideline/); the deployment record is in [verification](docs/verification/2026-10-26/README.md).
 
-Built for a parent or volunteer youth recreation coach to explain positioning, passing and movement to kids in under a minute. Board stays hands-on: arrange the board, Set start, move and pass, Reset, repeat. Coaching holds sourced activity illustrations and your playbook; Team holds local rosters and planned lineups. Match tracking, accounts, subscriptions, cloud sync, AI and animation timelines are outside this release.
+Arrange the players, tap Set start, and show the play. Tap Reset to show it again. Coaching has activity ideas and your saved boards. Team is where you can build a roster and plan lineups. Everything stays on your device unless you export or share it. Match tracking, accounts, subscriptions, cloud sync, AI and animation timelines are outside this release.
 
 The [soccer coaching plan](SOCCER_PLAN.md) and [team setup plan](TEAM_PLAN.md) describe the design. The [earlier screen concepts](docs/design/soccer-tabs/README.md) are design references. Current verification is recorded in [v0.5 checks](docs/verification/2026-10-26/README.md).
 
-The user authorized implementation of the verified shortlist. The first pack contains five original schematic illustrations linked to FIFA youth lessons, with the published ages, native activity sizes and Source and adaptation details. Starting-shape, prescribed-triangle and goalkeeper-build-out lessons are excluded. FA candidates remain outside this pack pending separate reuse/link handling. Independent youth-coach and physical-device acceptance remain open; no publisher endorsement is claimed. See the [content standard](docs/COACHING_CONTENT_STANDARD.md) and [implementation source notes](docs/research/IMPLEMENTATION_SOURCE_NOTES.md).
+The five activity boards are Sideline illustrations based on FIFA youth lessons. Each shows the published ages and group size, with a link to the original lesson and an explanation of what the board leaves out. They aren't complete practices, and no FIFA endorsement is claimed. Independent youth-coach review and physical-device acceptance are still pending. Starting-shape, prescribed-triangle and goalkeeper-build-out lessons aren't included; FA candidates also remain outside this pack pending separate reuse and link handling. See the [content standard](docs/COACHING_CONTENT_STANDARD.md) and [source notes](docs/research/IMPLEMENTATION_SOURCE_NOTES.md).
 
-## Workspaces
+## The three tabs
 
-- **Board:** moving, passing, position/number labels, Pass/Run arrows, freehand drawing, history, Set start, Reset, named saving and PNG sharing.
-- **Coaching:** five FIFA-linked activities filtered by published age band and topic; source details; spacing guides; attacking/defending half views; player visibility; My playbook with thumbnails, search, favorites, rename, duplicate, delete and editable-file backups.
-- **Team:** quick anonymous setup or multiple named teams, optional roles to try, availability, roster editing, manual starting assignments, bench, short-handed setups and named lineups. A preview and explicit Apply to board are required; team edits alone preserve the current board. Teams and saved lineups can be copied or exported/imported.
+- **Board** is where you move players, pass, draw, save and share a picture.
+- **Coaching** has five activities you can filter by age and topic, plus guides for the board and My playbook for saved boards. You can search, favorite, rename, copy, delete and export saved boards.
+- **Team** lets you set up a board without a roster, or keep named teams, mark who's available, choose starters and save lineups. Once you've assigned a goalkeeper, you can leave other positions empty for a short-handed lineup. You can also copy, export or import teams.
 
-Tab changes preserve the live board and history. Applying a lineup or opening an activity is undoable, including a field-format change. Sources use their native group sizes; the canvas preset does not turn a 2v1 into a 9v9 lesson. T means target and OFF means the inactive first defender in the U-10 sequence. The source's live practice conditions are explained; they are not enforced by a game simulation.
+Switching tabs keeps your board and undo history. Opening an activity or applying a lineup can be undone, even if it changes the field format. An activity keeps the group size from its source. For example, a 2v1 stays a 2v1 on the 9v9 board. T marks a target player; OFF marks the first defender who has stopped in the U-10 activity. The board shows an idea to discuss, so players still need to try the activity on the field.
+
+When you're done with an activity, tap **Default field** beside its name on the board. That starts a fresh field in the current format and keeps your team colors. The activity's drawings and starting point are cleared; tap Undo to bring them back.
 
 ## Run
 
@@ -36,18 +38,31 @@ To publish updates, commit the changed files and push `main` to [darthreckoner/S
 
 ## How it works
 
-- **Pass:** tap any teammate of the player with the ball. One tap = one pass (animated).
-- **Move:** drag any player or the ball. Drag the ball off a player for a shot or loose ball; drop it on a player to give them possession.
-- **Player labels:** positions are the default. In Move mode, hold a player for about half a second to open its menu. Choose **Pos** and a position or **#** and a number (0–99), then **Apply**. Each marker has its own choice. A desktop right-click opens the same menu. Dragging, releasing early, or cancelling the gesture cancels the hold; opening the menu never passes the ball.
-- **Change possession:** tap the ball, then any player (either team) or an open spot.
-- **Demonstrate:** Set start → run the play → Reset. Set start and Reset both select Move. Reset restores the captured players, ball, drawings and colors; Undo brings the demo back. Repeat without recapturing the start.
-- **Formation:** Team → Quick board setup offers independent Home/Away shapes: 3-3-2 or 3-2-3 for 9v9, 2-3-1 or 3-2-1 for 7v7. Reset both teams starts a fresh board with default labels, preserving colors and clearing drawings and demo start. Undo restores the previous board.
-- **Draw:** Arrow shows Pass / Run choices, drawn as solid / dashed marks with a legend. Freehand Draw and Erase remain available. Move mode never draws.
-- **Menu:** setup/workspace links, playbook, editable board export/import, full-field recovery, help and installation. Colors and formations live in Team.
-- **Save:** named boards in the local playbook; old five-slot saves remain intact. Current board and demo start recover automatically after completed edits. Success is reported after storage transactions commit. **Share:** PNG via the iOS share sheet, with a download fallback and source attribution for activity illustrations.
-- **Backup:** export a board, playbook or team as versioned JSON. Imports validate the entire file before applying; playbook and team imports create copies. Browser cleanup can still erase local data. Exported files are the recoverable backup.
+### Move and pass
 
-Label edits are undoable and included in saved boards, demonstration snapshots and PNG exports. Older saved boards receive position labels from their saved formation (or its default) without moving their players. The 9v9 3-3-2 defaults are GK; LB, CB, RB; LM, CM, RM; LF, RF. Left/right follow each team's attacking direction. The menu also includes LW, RW and ST.
+Choose Move and drag any player or the ball. To pass, tap a teammate of the player with the ball. You can also drag the ball onto a player. To give it to anyone, tap the ball and then that player. Tap an open spot or drag the ball off a player to leave it loose.
+
+Players show their positions at first. In Move mode, hold a player for about half a second, then choose **Pos** and a position or **#** and a number from 0 to 99. Tap Apply. On a computer, you can right-click instead. A short tap or drag won't open the label menu, and opening it won't pass the ball. Each player can have a different label; Undo reverses a change.
+
+### Show a play
+
+Put the players, ball and drawings where you want them, then tap Set start. Move or pass, and tap Reset to return to that starting point. Repeat as often as you like. Set start and Reset both select Move; Reset also restores the saved colors and drawings. Tap Undo to bring back the play you just showed.
+
+Choose Arrow, then Pass for a solid arrow or Run for a dashed arrow. Swipe across the field to place it. Choose Draw to sketch or Erase to remove a line. Move mode won't draw.
+
+### Choose a formation or lineup
+
+In Team → Quick board setup, choose Home, Away or both and pick a formation. The 9v9 choices are 3-3-2 and 3-2-3; the 7v7 choices are 2-3-1 and 3-2-1. Reset both teams puts the players back in their default positions and labels, keeps the colors, and clears drawings and the saved starting point. Undo brings the previous board back.
+
+To use a roster, add your players in Team, check who's available, and choose the starters. Check the lineup preview and tap Apply to board. Team edits alone don't change the board. After applying a lineup, tap Set start on the board if you want to demonstrate a play.
+
+### Save, share and back up
+
+Sideline saves your current board and starting point on this device after completed edits. Tap Save to give a board a name and find it later in Coaching → My playbook. Older five-slot saves stay intact. Share sends a PNG through the device's share sheet when available, or downloads it. Images of activities include their source attribution.
+
+Export a board, playbook or team as an editable JSON file and keep it somewhere else. Browser cleanup can erase local saves, so an exported file is your backup. Sideline checks a whole file before importing it. Team and playbook imports create copies; opening an imported board replaces the current board, and Undo brings that board back.
+
+Label edits are included in saved boards, starting points and PNGs. Older saved boards get position labels from their saved formation or its default without moving the players. The 9v9 3-3-2 defaults are GK; LB, CB, RB; LM, CM, RM; LF, RF. Left and right follow each team's attacking direction. The label menu also includes LW, RW and ST.
 
 ## Changes from v0.1
 
