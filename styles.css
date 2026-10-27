@@ -37,6 +37,24 @@ html, body {
 }
 
 /* The field gets every pixel the controls don't need. */
+.board-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  min-height: 0;
+}
+.shape-controls { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.shape-controls button, .shape-controls select {
+  min-height: 44px; border: 1px solid #3c6554; border-radius: 9px;
+  background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; font-weight: 700;
+}
+.shape-controls button { padding: 6px 10px; white-space: nowrap; }
+.shape-controls button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.shape-team { display: flex; flex-direction: row; align-items: center; gap: 5px; white-space: nowrap; font-size: 12px; }
+.shape-team select { width: auto; padding: 6px 22px 6px 7px; }
+.shape-modes { display: flex; gap: 5px; }
 .board-frame {
   position: relative;
   flex: 1;
@@ -150,7 +168,7 @@ dialog p { color: #d0dfd6; font-size: 14px; line-height: 1.45; margin: 8px 0; }
 }
 
 .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.seg button, .formation-controls button, .formation-controls select, .menu-actions button, .slot button, .wide {
+.seg button, .formation-controls button, .formation-controls select, .menu-actions button, .menu-actions a, .slot button, .wide {
   min-height: 44px;
   border: 0;
   border-radius: 10px;
@@ -176,6 +194,13 @@ button:focus-visible, select:focus-visible { outline: 3px solid var(--accent); o
 .swatches button.on { outline: 3px solid var(--accent); outline-offset: 2px; }
 
 .menu-actions { display: grid; gap: 6px; margin-top: 16px; }
+.menu-actions a { display: flex; align-items: center; justify-content: center; padding: 9px 13px; border: 1px solid #3c6554; background: var(--panel-hi); color: var(--ink); font-size: 14px; text-decoration: none; }
+.feedback-address { user-select: text; -webkit-user-select: text; -webkit-touch-callout: default; overflow-wrap: anywhere; }
+.feedback-address span { color: var(--accent); }
+.release-section + .release-section { border-top: 1px solid #3f6454; margin-top: 16px; }
+.release-section h3 { color: var(--accent); }
+.release-section ul { margin: 8px 0 16px; padding-left: 22px; color: #d0dfd6; font-size: 14px; line-height: 1.45; }
+.release-section li + li { margin-top: 8px; }
 
 .primary.wide, .wide { width: 100%; margin-top: 8px; }
 .primary.wide { background: var(--accent); color: var(--accent-ink); }
@@ -321,5 +346,17 @@ a { color: var(--accent); }
   .panel { padding: 12px; }
   .playbook-row { flex-wrap: wrap; }
   .playbook-row .actions { width: 100%; }
+}
+@media (max-width: 390px) {
+  .shape-controls { gap: 3px; }
+  .shape-controls button { padding: 6px 6px; font-size: 12px; }
+  .shape-team { gap: 3px; font-size: 11px; }
+  .shape-team select { padding-left: 4px; padding-right: 18px; font-size: 12px; }
+  .shape-modes { gap: 3px; }
+}
+@media (max-width: 350px) {
+  .shape-controls button { padding: 6px 4px; font-size: 11px; }
+  .shape-team { font-size: 10px; }
+  .shape-team select { width: 67px; padding-right: 12px; font-size: 11px; }
 }
 @media (max-height: 430px) and (orientation: landscape) { #app { grid-template-rows: minmax(0, 1fr) 44px; } .app-tabs button { font-size: 11px; } .app-tabs button span { font-size: 18px; } .rail { grid-auto-rows: 44px; } .lesson-cue { width: min(360px, calc(100% - 16px)); } }

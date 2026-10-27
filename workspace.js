@@ -353,7 +353,7 @@
   };
   el("export-team").onclick = () => { try { exportJSON({ kind: "sideline-team", version: 1, team: D.readTeam(currentTeam(), presets) }, "sideline-team.json").catch(failure); } catch (error) { notice(error.message); } };
 
-  window.SIDELINE_WORKSPACE = { boardChanged, saveBoard, openPlaybook, confirm: confirmChange, switchTab, flush: () => Promise.all([persistDraft(), persistTeams()]) };
+  window.SIDELINE_WORKSPACE = { boardChanged, saveBoard, openPlaybook, confirm: confirmChange, switchTab, notice, flush: () => Promise.all([persistDraft(), persistTeams()]) };
   (async function boot() {
     await window.SIDELINE_READY;
     try {
@@ -367,5 +367,6 @@
     renderTeam(); renderSituations(); updateCue();
     ready = true; draftSerial = JSON.stringify(B.snapshot());
     const requested = location.hash.slice(1); switchTab(["board", "coaching", "team"].includes(requested) ? requested : "board", false);
+    window.SIDELINE_RELEASE_NOTES.start();
   })().catch((error) => { console.error(error); notice("A workspace could not open. Your existing local saves have not been removed."); });
 })();

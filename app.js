@@ -9,7 +9,9 @@ const P = {
   get w() { return preset?.field.width || 1000; },
   get h() { return preset?.field.height || 620; },
 };
-const R = 28;                // player dot radius (field units)
+const R = 31;                // board-edge margin for moved objects (field units)
+const TEAM_R = R * 0.95 * 0.9; // teaching-team dot radius
+const OPPONENT_R = 25;
 const BALL_R = 15;
 const BALL_OFF = 34;         // ball offset from its carrier
 const PLAYER_HIT = 46;       // touch radius for players
@@ -88,7 +90,7 @@ function historyStep(from, to) {
 function updateButtons() {
   $("undo").disabled = !undo.length;
   $("redo").disabled = !redo.length;
-  $("reset-start").disabled = !start;
+  $("reset-start").disabled = !board;
 }
 
 // ---------- board model ----------
@@ -112,6 +114,44 @@ function makeBoard(data, formation = data.defaultFormation) {
   };
 }
 
+// Reset only positions and possession, keeping the coach's lineup and drawings.
+// Slot IDs preserve short-handed lineups; older boards with other IDs use their
+// team order for the remaining unclaimed formation slots.
+function defaultPositionBoard(value, data) {
+  const result = clone(value);
+  const activity = result.activity && window.SIDELINE_SITUATIONS?.find((item) => item.id === result.activity.id);
+  if (result.activity && !activity) return result;
+  const homeFormation = result.formations?.home || result.formation || data.defaultFormation;
+  const awayFormation = result.formations?.away || result.formation || data.defaultFormation;
+  const homeDefault = activity ? null : makeBoard(data, homeFormation);
+  const defaults = activity ? activity.players : [...homeDefault.players.filter((p) => p.team === "home"), ...makeBoard(data, awayFormation).players.filter((p) => p.team === "away")];
+  const positions = {};
+  for (const side of ["home", "away"]) {
+    const players = result.players.filter((p) => p.team === side);
+    const slots = new Map(defaults.filter((p) => p.team === side).map((p) => [p.id, p]));
+    const available = new Map(slots), assigned = new Map(), claimed = new Set();
+    for (const player of players) if (available.has(player.id)) {
+      assigned.set(player.id, player); claimed.add(player); available.delete(player.id);
+    }
+    for (const player of players) if (!claimed.has(player)) {
+      const slot = available.values().next().value;
+      if (!slot) continue;
+      assigned.set(slot.id, player); claimed.add(player); available.delete(slot.id);
+    }
+    for (const [id, player] of assigned) {
+      const slot = slots.get(id);
+      player.x = slot.x; player.y = slot.y;
+    }
+    positions[side] = assigned;
+  }
+  const first = activity ? activity.players[0] : homeDefault.players.find((p) => p.id === homeDefault.ball.carrier);
+  const eligible = result.players.filter((p) => p.team === first.team && !p.hidden);
+  let carrier = positions[first.team].get(first.id);
+  if (!carrier || carrier.hidden) carrier = eligible.reduce((best, p) => !best || dist(p, first) < dist(best, first) ? p : best, null);
+  result.ball = carrier ? { x: carrier.x, y: carrier.y, carrier: carrier.id } : { x: first.x, y: first.y, carrier: null };
+  return result;
+}
+
 function withPlayerLabels(saved, data) {
   if (!saved) return null;
   const result = clone(saved);
@@ -127,6 +167,89 @@ function withPlayerLabels(saved, data) {
 
 const playerLabel = (player) => player.display === "position" && player.position ? player.position : String(player.n);
 const playerName = (player) => player.display === "position" && player.position ? player.position : `#${player.n}`;
+const teachingTeam = (value = board) => value.teachingTeam || "home";
+const markerStyle = (player, value = board) => player.team === teachingTeam(value)
+  ? { radius: TEAM_R, alpha: 1, highlight: true }
+  : { radius: OPPONENT_R, alpha: 0.78, highlight: false };
+
+// Build triangles from the positions at the moment lines are enabled. Their
+// player IDs are stored, so dragging a player stretches the same connections.
+function triangulate(players) {
+  const ordered = [...players].sort((a, b) => a.x - b.x || a.y - b.y || a.id.localeCompare(b.id));
+  const points = ordered.filter((p, i) => !ordered.slice(0, i).some((q) => p.x === q.x && p.y === q.y));
+  const count = points.length;
+  if (count < 3) return [];
+  const minX = Math.min(...points.map((p) => p.x)), maxX = Math.max(...points.map((p) => p.x));
+  const minY = Math.min(...points.map((p) => p.y)), maxY = Math.max(...points.map((p) => p.y));
+  const span = Math.max(maxX - minX, maxY - minY, 1), mx = (minX + maxX) / 2, my = (minY + maxY) / 2;
+  const all = [...points, { x: mx - 20 * span, y: my - 10 * span }, { x: mx, y: my + 20 * span }, { x: mx + 20 * span, y: my - 10 * span }];
+  function circle(triangle) {
+    const [a, b, c] = triangle.map((i) => all[i]);
+    const d = 2 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y));
+    if (Math.abs(d) < 1e-7) return null;
+    const aa = a.x * a.x + a.y * a.y, bb = b.x * b.x + b.y * b.y, cc = c.x * c.x + c.y * c.y;
+    const x = (aa * (b.y - c.y) + bb * (c.y - a.y) + cc * (a.y - b.y)) / d;
+    const y = (aa * (c.x - b.x) + bb * (a.x - c.x) + cc * (b.x - a.x)) / d;
+    return { x, y, r2: (a.x - x) ** 2 + (a.y - y) ** 2 };
+  }
+  let triangles = [[count, count + 1, count + 2]];
+  for (let i = 0; i < count; i++) {
+    const bad = triangles.filter((triangle) => {
+      const c = circle(triangle);
+      return c && (all[i].x - c.x) ** 2 + (all[i].y - c.y) ** 2 <= c.r2 + Math.max(1, c.r2) * 1e-10;
+    });
+    const edges = new Map();
+    for (const [a, b, c] of bad) for (const [u, v] of [[a, b], [b, c], [c, a]]) {
+      const key = u < v ? `${u}:${v}` : `${v}:${u}`;
+      const edge = edges.get(key);
+      if (edge) edge.count++; else edges.set(key, { u, v, count: 1 });
+    }
+    const removed = new Set(bad);
+    triangles = triangles.filter((triangle) => !removed.has(triangle));
+    for (const edge of edges.values()) {
+      const triangle = [edge.u, edge.v, i];
+      if (edge.count === 1 && circle(triangle)) triangles.push(triangle);
+    }
+  }
+  return triangles.filter((triangle) => triangle.every((i) => i < count)).map((triangle) => triangle.map((i) => all[i].id));
+}
+
+function refreshShapeLines(value) {
+  if (!value.shapeLines) return;
+  value.shapeLines.triangles = value.shapeLines.enabled && value.shapeLines.mode === "offense"
+    ? triangulate(value.players.filter((p) => p.team === teachingTeam(value) && !p.hidden)) : [];
+}
+
+function transferShapeSettings(from, to) {
+  if (from.teachingTeam) to.teachingTeam = from.teachingTeam;
+  if (from.shapeLines) {
+    to.shapeLines = { enabled: from.shapeLines.enabled, mode: from.shapeLines.mode, triangles: [] };
+    refreshShapeLines(to);
+  }
+}
+
+function shapeSegments(value = board) {
+  const shape = value.shapeLines;
+  if (!shape?.enabled) return [];
+  const players = value.players.filter((p) => p.team === teachingTeam(value) && !p.hidden);
+  if (shape.mode === "defense") {
+    if (value.activity) return []; // Small-sided activities do not prescribe formation lines.
+    const groups = [["LB", "CB", "RB"], ["LM", "CM", "RM"], ["LW", "LF", "ST", "RF", "RW"]];
+    return groups.flatMap((roles) => {
+      const line = players.filter((p) => roles.includes(p.position)).sort((a, b) => roles.indexOf(a.position) - roles.indexOf(b.position) || a.id.localeCompare(b.id));
+      return line.slice(1).map((p, i) => [line[i], p]);
+    });
+  }
+  const byId = new Map(players.map((p) => [p.id, p])), edges = new Map();
+  for (const ids of shape.triangles) {
+    if (!ids.every((id) => byId.has(id))) continue;
+    for (const [a, b] of [[ids[0], ids[1]], [ids[1], ids[2]], [ids[2], ids[0]]]) {
+      const key = JSON.stringify([a, b].sort());
+      if (!edges.has(key)) edges.set(key, [byId.get(a), byId.get(b)]);
+    }
+  }
+  return [...edges.values()];
+}
 
 async function loadPreset(format) {
   const data = window.SIDELINE_PRESETS?.[format];
@@ -264,16 +387,28 @@ function strokeInk(c, ink) {
   c.stroke();
 }
 
-function label(c, text, x, y, color, rot) {
+function label(c, text, x, y, color, rot, radius) {
   c.save();
   c.translate(x, y);
   if (rot) c.rotate(Math.PI / 2); // keep labels upright when the field is turned
   c.fillStyle = color;
-  const size = text.length > 2 ? 20 : text.length === 2 ? 25 : 30;
+  const size = Math.round((text.length > 2 ? 20 : text.length === 2 ? 25 : 30) * radius / 28);
   c.font = `bold ${size}px system-ui, -apple-system, sans-serif`;
   c.textAlign = "center";
   c.textBaseline = "middle";
-  c.fillText(text, 0, 2, R * 2 - 10);
+  c.fillText(text, 0, 2, radius * 2 - 8);
+  c.restore();
+}
+
+function drawShapeLines(c) {
+  const segments = shapeSegments();
+  if (!segments.length) return;
+  c.save(); c.lineCap = "round"; c.lineJoin = "round";
+  for (const [width, color] of [[8, "#05241bb3"], [4, "#f2ffe0d9"]]) {
+    c.beginPath();
+    for (const [a, b] of segments) { c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); }
+    c.lineWidth = width; c.strokeStyle = color; c.stroke();
+  }
   c.restore();
 }
 
@@ -292,6 +427,7 @@ function contents(c, { rot = false, live = false } = {}) {
     if (mark.type === "gate") for (const p of [mark.a, mark.b]) { c.beginPath(); c.arc(p.x, p.y, 10, 0, Math.PI * 2); c.fillStyle = "#ffcb54"; c.fill(); }
   }
   c.restore();
+  drawShapeLines(c);
   c.lineCap = "round";
   c.lineJoin = "round";
   c.strokeStyle = "#fff7a8";
@@ -299,18 +435,26 @@ function contents(c, { rot = false, live = false } = {}) {
   for (const ink of board.ink) strokeInk(c, ink);
   if (live && gesture?.ink) strokeInk(c, gesture.ink);
 
-  for (const p of board.players) {
+  // Draw the teaching team last so its highlighted markers stay prominent.
+  const players = [...board.players].sort((a, b) => Number(a.team === teachingTeam()) - Number(b.team === teachingTeam()));
+  for (const p of players) {
     if (p.hidden) continue;
-    const fill = board.colors[p.team];
+    const fill = board.colors[p.team], style = markerStyle(p);
     const dark = isDark(fill);
+    c.save(); c.globalAlpha = style.alpha;
+    if (style.highlight) {
+      c.beginPath(); c.arc(p.x, p.y, style.radius + 5, 0, Math.PI * 2);
+      c.lineWidth = 3; c.strokeStyle = "#f4ffdded"; c.stroke();
+    }
     c.beginPath();
-    c.arc(p.x, p.y, R, 0, Math.PI * 2);
+    c.arc(p.x, p.y, style.radius, 0, Math.PI * 2);
     c.fillStyle = fill;
     c.fill();
     c.lineWidth = 4;
     c.strokeStyle = dark ? "#f4f7ef" : "#0f2e24";
     c.stroke();
-    label(c, playerLabel(p), p.x, p.y, dark ? "#ffffff" : "#0b241e", rot);
+    label(c, playerLabel(p), p.x, p.y, dark ? "#ffffff" : "#0b241e", rot, style.radius);
+    c.restore();
   }
 
   const b = ballPos();
@@ -323,17 +467,14 @@ function contents(c, { rot = false, live = false } = {}) {
     c.strokeStyle = "#fff7a8";
     c.stroke();
   }
-  c.beginPath();
-  c.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
-  c.fillStyle = "#ffffff";
-  c.fill();
-  c.lineWidth = 4;
-  c.strokeStyle = "#16222b";
-  c.stroke();
-  c.beginPath();
-  c.arc(b.x, b.y, 5, 0, Math.PI * 2);
-  c.fillStyle = "#16222b";
-  c.fill();
+  const ballRenderer = window.SIDELINE_BALLS?.[preset.field.type];
+  if (ballRenderer) ballRenderer(c, b, BALL_R);
+  else {
+    // Presets without a sport-specific ball renderer retain the generic marker.
+    c.beginPath(); c.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
+    c.fillStyle = "#ffffff"; c.fill(); c.lineWidth = 4; c.strokeStyle = "#16222b"; c.stroke();
+    c.beginPath(); c.arc(b.x, b.y, 5, 0, Math.PI * 2); c.fillStyle = "#16222b"; c.fill();
+  }
   const kinds = new Set(board.ink.filter((i) => i.type === "arrow").map((i) => i.kind).filter(Boolean));
   if (kinds.size) {
     c.save(); c.fillStyle = "#08251de8"; c.fillRect(20, P.h - 72, 145, 54); c.strokeStyle = "#fff7a8"; c.lineWidth = 4;
@@ -382,11 +523,17 @@ function draw() {
 // ---------- input ----------
 
 function hitPlayer(point, radius = PLAYER_HIT) {
-  let best = null, bestD = radius;
+  let best = null, bestD = radius, bestPriority = -1;
   for (const p of board.players) {
     if (p.hidden) continue;
     const d = dist(point, p);
-    if (d < bestD) { best = p; bestD = d; }
+    const style = markerStyle(p);
+    // Match the visual stacking when markers overlap; outside the visible dots,
+    // keep the generous touch target and choose the closest player.
+    const priority = d <= style.radius ? (style.highlight ? 2 : 1) : 0;
+    if (d < radius && (priority > bestPriority || (priority === bestPriority && d < bestD))) {
+      best = p; bestD = d; bestPriority = priority;
+    }
   }
   return best;
 }
@@ -688,14 +835,17 @@ $("capture").onclick = () => {
 };
 
 $("reset-start").onclick = () => {
-  if (!start) return;
+  if (!board) return;
+  const savedStart = !!start;
+  const next = savedStart ? clone(start) : defaultPositionBoard(board, preset);
   checkpoint();
-  board = clone(start);
+  if (!savedStart && next.activity) next.activity.edited = board.activity.edited;
+  board = next;
   setMode("move");
   anim = null;
   syncMenu();
   draw();
-  note("Back to start. Undo brings the demo back.");
+  note(savedStart ? "Back to start. Undo brings the demo back." : "Default positions ready. Undo brings the play back.");
 };
 
 // Menu: format, formation and colors. Choices come from the registered presets.
@@ -709,6 +859,7 @@ for (const data of Object.values(window.SIDELINE_PRESETS)) {
 
 function syncMenu() {
   if (!board) return;
+  syncShapeControls();
   canvas.setAttribute("aria-label", board.activity ? `${board.activity.title} activity illustration` : `Interactive ${preset.name} coaching board`);
   document.querySelectorAll("[data-format]").forEach((b) => {
     const selected = b.dataset.format === board.format;
@@ -735,9 +886,10 @@ function syncMenu() {
 
 function resetFormation(formation, message = `${formation} formation ready. Undo restores your previous board.`) {
   checkpoint();
-  const colors = { ...board.colors };
+  const previous = board, colors = { ...board.colors };
   board = makeBoard(preset, formation);
   board.colors = colors;
+  transferShapeSettings(previous, board);
   start = null;
   anim = null;
   setMode("move");
@@ -757,11 +909,21 @@ function applyFormation(side, formation) {
   if (board.activity) return resetFormation(formation);
   checkpoint();
   const other = side === "home" ? "away" : "home";
+  const oldFormation = board.formations?.[side] || board.formation || preset.defaultFormation;
+  const oldRoles = preset.formationPositions?.[oldFormation] || [];
   board.formations = { home: board.formation || preset.defaultFormation, away: board.formation || preset.defaultFormation, ...board.formations, [side]: formation };
   const replacement = makeBoard(preset, formation).players.filter((p) => p.team === side);
   const original = board.players.filter((p) => p.team === side);
-  board.players = [...board.players.filter((p) => p.team === other), ...replacement.map((p, i) => ({ ...original[i], ...p, id: original[i]?.id || p.id, n: original[i]?.n ?? p.n, position: original[i]?.position || p.position, display: original[i]?.display || p.display }))];
+  const slots = new Map(original.map((p) => [p.id, p]));
+  const sparseSlots = original.length < replacement.length && original.every((p) => replacement.some((slot) => slot.id === p.id));
+  const updated = replacement.flatMap((p, i) => {
+    const prior = sparseSlots ? slots.get(p.id) : original[i];
+    if (sparseSlots && !prior) return [];
+    return [{ ...prior, ...p, id: prior?.id || p.id, n: prior?.n ?? p.n, position: prior?.position && prior.position !== oldRoles[i] ? prior.position : p.position, display: prior?.display || p.display }];
+  });
+  board.players = [...board.players.filter((p) => p.team === other), ...updated];
   board.formation = board.formations.home;
+  refreshShapeLines(board);
   start = null; anim = null; setMode("move"); syncMenu(); updateButtons(); draw();
   note(`${TEAM[side]} ${formation} ready. Set start for a new demonstration.`);
 }
@@ -803,11 +965,12 @@ document.querySelectorAll("[data-format]").forEach((btn) =>
     const format = btn.dataset.format;
     if (format === board.format) return;
     if (undo.length && !(await (window.SIDELINE_WORKSPACE?.confirm("Switch field format? This creates a fresh board. Undo will restore your current board.", "Change format") ?? Promise.resolve(confirm("Switch format? Your unsaved board will be replaced."))))) return;
-    const before = snapshot(), history = [...undo];
+    const before = snapshot(), history = [...undo], previous = board;
     const colors = { ...board.colors };
     await setFormat(format);
     undo = [...history, before];
     board.colors = colors; // keep the team's colors across formats
+    transferShapeSettings(previous, board);
     syncMenu();
     draw();
     updateButtons();
@@ -911,6 +1074,7 @@ function applyLineup(team, side) {
   const lineup = data.lineup(team, window.SIDELINE_PRESETS), target = window.SIDELINE_PRESETS[team.format];
   const fresh = board.format !== team.format || !!board.activity;
   const next = fresh ? makeBoard(target) : clone(board);
+  if (fresh) transferShapeSettings(board, next);
   const oldCarrier = carrierOf(), previousBall = restingBall();
   const markerSide = makeBoard(target, team.formation).players.filter((p) => p.team === side);
   const selected = markerSide.flatMap((p, i) => lineup.players[i] ? [{ ...p, n: lineup.players[i].number, name: lineup.players[i].name, rosterId: lineup.players[i].id, sourceTeamId: team.id }] : []);
@@ -921,6 +1085,8 @@ function applyLineup(team, side) {
   if (next.colors[other] === team.color) next.colors[other] = SWATCHES.find((c) => c !== team.color);
   next.formations = { home: next.formation || target.defaultFormation, away: next.formation || target.defaultFormation, ...next.formations, [side]: team.formation };
   next.formation = next.formations.home;
+  next.teachingTeam = side;
+  refreshShapeLines(next);
   if (fresh) next.ball = { x: selected[0].x, y: selected[0].y, carrier: selected[0].id };
   else if (oldCarrier?.team === side) {
     const same = selected.find((p) => oldCarrier.rosterId && p.rosterId === oldCarrier.rosterId);
@@ -932,13 +1098,41 @@ function applyLineup(team, side) {
 function updateBoardOptions(values) {
   cancelGesture(); checkpoint();
   for (const key of ["view", "guides", "teachingTeam"]) if (values[key] != null) board[key] = values[key];
+  if (values.shapeLines) board.shapeLines = { enabled: values.shapeLines.enabled, mode: values.shapeLines.mode, triangles: [] };
   if (values.visibility) {
     const ball = restingBall();
     for (const p of board.players) if (Object.hasOwn(values.visibility, p.id)) p.hidden = !values.visibility[p.id];
     if (board.players.find((p) => p.id === board.ball.carrier)?.hidden) board.ball = { ...ball, carrier: null };
   }
+  if (values.shapeLines || values.teachingTeam != null || values.visibility) refreshShapeLines(board);
+  syncShapeControls();
   draw();
 }
+
+function syncShapeControls() {
+  const shape = board.shapeLines || { enabled: false, mode: "defense" };
+  $("board-teaching-team").value = teachingTeam();
+  $("show-lines").setAttribute("aria-pressed", String(shape.enabled));
+  for (const mode of ["defense", "offense"]) $("lines-" + mode).setAttribute("aria-pressed", String(shape.enabled && shape.mode === mode));
+}
+
+function selectShapeLines(enabled, mode) {
+  const current = board.shapeLines || { enabled: false, mode: "defense" };
+  if (current.enabled === enabled && current.mode === mode) return;
+  updateBoardOptions({ shapeLines: { enabled, mode } });
+  if (enabled && mode === "defense" && board.activity) note("Defensive position lines are available on formation boards.", 4000);
+  else if (enabled && mode === "offense" && !board.shapeLines.triangles.length) note("Use at least three visible teammates who aren't in a straight line, then turn lines off and on.", 4500);
+}
+
+$("board-teaching-team").onchange = () => {
+  if ($("board-teaching-team").value !== teachingTeam()) updateBoardOptions({ teachingTeam: $("board-teaching-team").value });
+};
+$("show-lines").onclick = () => {
+  const shape = board.shapeLines || { enabled: false, mode: "defense" };
+  selectShapeLines(!shape.enabled, shape.mode);
+};
+$("lines-defense").onclick = () => selectShapeLines(true, "defense");
+$("lines-offense").onclick = () => selectShapeLines(true, "offense");
 
 function previewBoard(targetCanvas, value) {
   const previous = { board, preset, anim };

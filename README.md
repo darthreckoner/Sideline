@@ -36,7 +36,15 @@ GitHub Pages publishes the root of the `main` branch. The `.nojekyll` file keeps
 
 To publish updates, commit the changed files and push `main` to [darthreckoner/Sideline](https://github.com/darthreckoner/Sideline). GitHub Pages deploys the changes automatically. Bump the cache version in `sw.js` whenever runtime files change. Each update caches a complete release in the background, then takes over after all existing Sideline tabs and windows close. Open online, close Sideline, and reopen to pick up a downloaded update.
 
+For each release, append a short, user-facing entry to `releases.js` and set the `sw.js` cache version to the same version. Keep the older entries so people who skip releases can see what changed. The test suite checks that the release and cache versions match. Don't change a released entry in place; a new release needs a new version.
+
 ## How it works
+
+### Feedback and updates
+
+On Board, tap Menu → Send feedback to open a draft email to Sideline. You can edit the message before sending; if no email app opens, use the address shown in the menu. Sending depends on your email app and connection.
+
+What's new appears when a release newer than the one you dismissed opens on this device. Tap Got it or close it to dismiss it; Menu → What's new opens the latest notes again. First-time visitors see the latest notes once. The dismissal is stored on this device, so another browser or installed copy may show the notice separately, and clearing local data can make it appear again.
 
 ### Move and pass
 
@@ -46,9 +54,19 @@ Players show their positions at first. In Move mode, hold a player for about hal
 
 ### Show a play
 
-Put the players, ball and drawings where you want them, then tap Set start. Move or pass, and tap Reset to return to that starting point. Repeat as often as you like. Set start and Reset both select Move; Reset also restores the saved colors and drawings. Tap Undo to bring back the play you just showed.
+Before you set a start, tap Reset to return the players and ball to their default positions for the selected formations. Your lineup, labels, colors and drawings stay in place. Activities return to their original setup. Tap Undo to bring the previous play back.
+
+To save your own starting point, put the players, ball and drawings where you want them, then tap Set start. Move or pass, and tap Reset to return to that starting point. Repeat as often as you like. Set start and Reset both select Move; a saved start also restores its colors and drawings.
 
 Choose Arrow, then Pass for a solid arrow or Run for a dashed arrow. Swipe across the field to place it. Choose Draw to sketch or Erase to remove a line. Move mode won't draw.
+
+### Show team lines
+
+On Board, choose Home or Away under **My team**. Your team's markers are larger and outlined; the other team's markers are a little smaller and lighter. Applying a roster lineup selects the side you applied it to. You can also change the teaching team in Coaching → Teaching aids.
+
+Tap **Show lines** to turn the connections on or off, and choose **Defense** or **Offense**. Defense connects visible players in the same position group (backs, midfielders and forwards), excluding the goalkeeper. Edit a player's position to change their group. Defensive position lines are available on formation boards; activity diagrams don't prescribe formation roles.
+
+Offense draws triangles among the visible players on your team. A triangle needs three players who aren't all in a straight line. Lines stay attached to the same players as you move them; turn lines off and on to rebuild the triangles from the new positions. The triangles show possible spacing, not whether a pass is open or what a player must do. Hiding players, changing teams or applying a formation or lineup rebuilds the connections. Line settings and triangles are included in saved boards, demonstration starts and shared images.
 
 ### Choose a formation or lineup
 
@@ -94,6 +112,7 @@ Label edits are included in saved boards, starting points and PNGs. Older saved 
 
 - `index.html`, `styles.css`, `app.js` — the app
 - `workspace.js`, `data.js`, `storage.js` — workspaces, board/team validation and transactional local storage
+- `releases.js`, `release-notes.js` — release notes, dismissal and the feedback email link
 - `coaching/situations.js` — verified FIFA reference metadata and original practice schematics
 - `presets/soccer-field.js` — soccer-only field renderer
 - `presets/soccer-9v9.js`, `presets/soccer-7v7.js` — runtime preset data; matching JSON files are their source copies
@@ -101,14 +120,14 @@ Label edits are included in saved boards, starting points and PNGs. Older saved 
 
 ## Adding a sport later
 
-A preset registers in `window.SIDELINE_PRESETS` with an `id`, `name`, `playerCount`, `field` dimensions and renderer `type`, named `formations`, and a `defaultFormation`. Positions are field coordinates for Home; Away is mirrored across both field axes. Optional `positions` maps role abbreviations to names, and `formationPositions` provides one role per marker in each formation. Without role metadata, a preset defaults to number labels. The player nearest center starts with the ball. A renderer registers in `window.SIDELINE_FIELDS[type]` and draws only the field on the supplied canvas context.
+A preset registers in `window.SIDELINE_PRESETS` with an `id`, `name`, `playerCount`, `field` dimensions and renderer `type`, named `formations`, and a `defaultFormation`. Positions are field coordinates for Home; Away is mirrored across both field axes. Optional `positions` maps role abbreviations to names, and `formationPositions` provides one role per marker in each formation. Without role metadata, a preset defaults to number labels. The player nearest center starts with the ball. A renderer registers in `window.SIDELINE_FIELDS[type]` and draws only the field on the supplied canvas context. A sport can optionally register `window.SIDELINE_BALLS[type]` to draw its ball; otherwise the board uses the generic marker.
 
-Add the new preset and renderer scripts to `index.html` and the offline file list in `sw.js`, then bump the cache version. The format picker discovers registered presets automatically. Dragging, drawing, passing, undo, saved boards and demonstration reset share the same engine. Basketball and football presets are not included yet; sport-specific rules or objects may need additional work.
+Add the new preset and renderer scripts to `index.html` and the offline file list in `sw.js`, then add release notes and bump the cache version as described above. The format picker discovers registered presets automatically. Dragging, drawing, passing, undo, saved boards and demonstration reset share the same engine. Basketball and football presets are not included yet; sport-specific rules or objects may need additional work.
 
 ## Verification
 
-Run `node --test tests/*.test.cjs` for board, data and offline-shell checks. The suite covers the existing gestures and labels plus native activity counts, source references, snapshots and import rejection, team identity/copies, assignment rules, bench/availability, cross-format Undo, hidden possession, inverse coordinates, transaction aborts and complete offline assets. Browser checks and screenshots are in the verification record. These do not establish real-device touch, teaching effectiveness or iOS acceptance.
+Run `node --test tests/*.test.cjs` for board, data, release-note and offline-shell checks. The suite covers the existing gestures and labels plus native activity counts, source references, snapshots and import rejection, team identity/copies, assignment rules, bench/availability, cross-format Undo, hidden possession, inverse coordinates, transaction aborts, release dismissals and complete offline assets. Browser checks and screenshots are in the verification record. These do not establish real-device touch, teaching effectiveness or iOS acceptance.
 
 ## Still to test on a real iPhone
 
-Outdoors in sunlight, one-handed: open, pass, drag, Set start, Reset — under 30 seconds. Hold a player, change Pos / #, and verify quick taps and drags do not open its menu. Check all three tabs, roster typing and lineup assignment, the save dialog, recovered draft, native board/team-file sharing and imports, Home Screen install, offline relaunch and PNG → Messages. Test a service-worker update with existing saves. Independent youth-coach review and on-field teaching checks are separate from these device checks.
+Outdoors in sunlight, one-handed: open, pass, drag, Set start, Reset — under 30 seconds. Hold a player, change Pos / #, and verify quick taps and drags do not open its menu. Check all three tabs, roster typing and lineup assignment, the save dialog, recovered draft, native board/team-file sharing and imports, Home Screen install, offline relaunch and PNG → Messages. Test a service-worker update with existing saves, the What's new dismissal across relaunches, and the feedback email draft. Independent youth-coach review and on-field teaching checks are separate from these device checks.

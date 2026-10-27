@@ -24,3 +24,41 @@
     c.strokeRect(left ? 2 : w - 14, (h - 110) / 2, 12, 110);
   }
 };
+
+// A small, high-contrast black-and-white ball stays legible on phone screens.
+// The shared board supplies the position and touch target; this only paints it.
+(window.SIDELINE_BALLS ||= {}).soccer = (c, point, radius) => {
+  c.save();
+  c.translate(point.x, point.y);
+  c.scale(radius, radius);
+  c.beginPath(); c.arc(0, 0, 1, 0, Math.PI * 2);
+  c.fillStyle = "#ffffff"; c.fill();
+  c.save(); c.clip();
+  c.strokeStyle = "#16222b"; c.lineWidth = 0.07;
+  c.fillStyle = "#16222b";
+  const angles = Array.from({ length: 5 }, (_, i) => -Math.PI / 2 + i * Math.PI * 2 / 5);
+  c.beginPath();
+  for (const angle of angles) {
+    c.moveTo(Math.cos(angle) * 0.33, Math.sin(angle) * 0.33);
+    c.lineTo(Math.cos(angle) * 0.78, Math.sin(angle) * 0.78);
+  }
+  c.stroke();
+  c.beginPath();
+  angles.forEach((angle, i) => {
+    const x = Math.cos(angle) * 0.34, y = Math.sin(angle) * 0.34;
+    if (i) c.lineTo(x, y); else c.moveTo(x, y);
+  });
+  c.closePath(); c.fill();
+  for (const angle of angles) {
+    c.beginPath();
+    for (const [r, a] of [[0.7, angle], [0.84, angle - 0.25], [1.1, angle - 0.23], [1.1, angle + 0.23], [0.84, angle + 0.25]]) {
+      if (r === 0.7) c.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+      else c.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    c.closePath(); c.fill();
+  }
+  c.restore();
+  c.beginPath(); c.arc(0, 0, 1, 0, Math.PI * 2);
+  c.lineWidth = 0.17; c.strokeStyle = "#16222b"; c.stroke();
+  c.restore();
+};

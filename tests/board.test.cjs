@@ -23,7 +23,7 @@ test("opens as 9v9, with a goalkeeper per team and registered formation choices"
   assert.equal(board.players[0].x, 65);
   assert.equal(board.players[9].x, 935);
   assert.deepEqual(a.get("formation").children.map((o) => o.value), ["3-3-2", "3-2-3"]);
-  assert.equal(a.get("reset-start").disabled, true);
+  assert.equal(a.get("reset-start").disabled, false);
 });
 
 test("demonstration restores custom positions, ball, and ink repeatedly; Undo restores the demo", async () => {
@@ -56,7 +56,7 @@ test("formation change resets setup, preserves colors, and Undo restores board a
   assert.equal(a.state().board.colors.home, "#ef4444");
   assert.equal(a.state().board.ink.length, 0);
   assert.equal(a.state().start, null);
-  assert.equal(a.get("reset-start").disabled, true);
+  assert.equal(a.get("reset-start").disabled, false);
   a.get("undo").onclick();
   assert.deepEqual(a.state(), before);
   assert.equal(a.get("formation").value, "3-3-2");
@@ -257,7 +257,7 @@ test("screen and exported board rendering use each player's chosen display", asy
     a.renderedLabels.length = 0;
     a.run(`contents(ctx, { live: ${live} })`);
     assert.equal(a.renderedLabels.length, 18);
-    assert.deepEqual(a.renderedLabels.slice(0, 4), ["GK", "23", "CB", "RB"]);
+    assert.deepEqual(a.renderedLabels.slice(9, 13), ["GK", "23", "CB", "RB"]); // teaching team is drawn last
   }
 });
 

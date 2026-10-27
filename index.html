@@ -16,12 +16,22 @@
 <body>
 <div id="app">
 <section id="board-view" class="board-workspace" role="tabpanel" aria-labelledby="tab-board">
+  <div class="board-content">
+    <div class="shape-controls" aria-label="Team and line controls">
+      <label class="shape-team"><span>My team</span><select id="board-teaching-team" aria-label="My team"><option value="home">Home</option><option value="away">Away</option></select></label>
+      <button type="button" id="show-lines" aria-pressed="false">Show lines</button>
+      <div class="shape-modes" role="group" aria-label="Line style">
+        <button type="button" id="lines-defense" aria-pressed="false">Defense</button>
+        <button type="button" id="lines-offense" aria-pressed="false">Offense</button>
+      </div>
+    </div>
   <main class="board-frame">
     <canvas id="board" aria-label="Interactive soccer tactics field"></canvas>
     <div id="message" class="toast" role="status" aria-live="polite"></div>
     <div id="arrow-style" class="floating-tools" hidden aria-label="Arrow style"><button id="arrow-pass" class="on" aria-pressed="true">→ Pass</button><button id="arrow-run" aria-pressed="false">⇢ Run</button></div>
     <div id="activity-controls" class="lesson-cue" hidden><div class="lesson-controls"><details id="active-lesson"><summary id="active-lesson-title"></summary><p id="active-lesson-cue"></p><p id="active-lesson-question"></p><button id="active-lesson-source">How to play &amp; source</button></details><button type="button" id="default-field" class="accent" title="Start a fresh field in the current format. Undo brings the activity back.">Default field</button></div></div>
   </main>
+  </div>
 
   <nav class="rail" aria-label="Board controls">
     <button data-mode="move" class="active"><i>✥</i><span>Move</span></button>
@@ -31,7 +41,7 @@
     <button id="undo"><i>↶</i><span>Undo</span></button>
     <button id="redo"><i>↷</i><span>Redo</span></button>
     <button id="capture" title="Demonstrate: save this setup and start moving players"><i>◎</i><span>Set start</span></button>
-    <button id="reset-start" title="Reset the demonstration to your saved starting positions"><i>⟲</i><span>Reset</span></button>
+    <button id="reset-start" title="Return to your saved start or the default positions"><i>⟲</i><span>Reset</span></button>
     <button id="clear"><i>✕</i><span>Clear ink</span></button>
     <button id="save"><i>★</i><span>Save</span></button>
     <button id="share" class="primary"><i>⇪</i><span>Share</span></button>
@@ -102,6 +112,9 @@
       <button type="button" data-open-tab="team">Team and board setup</button>
       <button type="button" data-open-tab="coaching">Coaching situations</button>
       <button type="button" id="load">Saved boards</button>
+      <button type="button" id="show-release-notes">What's new</button>
+      <a id="send-feedback" href="mailto:darthreckoner@gmail.com">Send feedback</a>
+      <p class="feedback-address">No email app? Send your feedback to <span>darthreckoner@gmail.com</span>.</p>
       <button type="button" id="export-board">Export editable board</button>
       <button type="button" class="import-file">Import Sideline file</button>
       <button type="button" id="full-field">Show full field</button>
@@ -110,6 +123,13 @@
     </div>
     <p id="offline-status" class="quiet" role="status">Open online to prepare offline use.</p>
   </form>
+</dialog>
+
+<dialog id="releaseDialog" aria-labelledby="release-title">
+  <div class="dialog-title"><h2 id="release-title">What's new</h2><button type="button" id="release-close" class="x" aria-label="Close What's new">✕</button></div>
+  <div id="release-list"></div>
+  <p id="release-storage-error" class="form-error" role="status" hidden></p>
+  <button type="button" id="release-dismiss" class="accent wide">Got it</button>
 </dialog>
 
 <dialog id="savesDialog">
@@ -127,11 +147,12 @@
     <p>Choose Move, then drag a player or the ball. To pass, tap a teammate of the player with the ball. To give the ball to anyone, tap the ball and then that player. Tap an empty spot to leave it loose.</p>
     <p>Players show their positions at first. In Move mode, hold a player, choose Pos for a position or # for a number, then tap Apply. On a computer, you can also right-click. Tap Undo if you want to change it back.</p>
     <h3>Show a play</h3>
-    <p>Put the players where you want them and tap Set start. Move them or pass the ball, then tap Reset to go back and show it again. Undo brings back the play you just showed.</p>
+    <p>Tap Reset to return players and the ball to their default positions. To save your own starting point, put the players where you want them and tap Set start. Move them or pass the ball, then tap Reset to go back to your saved start. Undo brings back the play you just showed.</p>
     <p>For arrows, choose Arrow, then pick Pass for a solid arrow or Run for a dashed one. Swipe across the field to place it. Choose Draw to sketch or Erase to remove a line.</p>
     <h3>Find an idea or set up your team</h3>
     <p>In Coaching, pick an activity. Tap How to play &amp; source for a short description and the original lesson, or Open on board to show it. On the board, tap the activity title to see its cue and source again. When you're done, tap Default field for a fresh field in the current format. Undo brings the activity back.</p>
-    <p>Use Teaching aids in Coaching to show guides, focus on one half or hide players.</p>
+    <p>On Board, choose your team and tap Show lines. Defense connects players in the same position group; Offense shows triangles between teammates. Lines follow the players as you move them. Triangles show spacing, not necessarily an open pass. Turn lines off and on to make new triangles from the current positions.</p>
+    <p>Use Teaching aids in Coaching to show guides, focus on one half or hide players. Defensive position lines are for formation boards, not activity diagrams.</p>
     <p>A T marks a target player. OFF marks the defender who has stopped in the U-10 activity.</p>
     <p>In Team, use Quick board setup without adding players, or make a roster and choose a lineup. Check the preview, then tap Apply to board. Editing your team leaves the board as it is.</p>
     <h3>Save and use offline</h3>
@@ -156,6 +177,8 @@
 <script defer src="./storage.js"></script>
 <script defer src="./coaching/situations.js"></script>
 <script defer src="./app.js"></script>
+<script defer src="./releases.js"></script>
+<script defer src="./release-notes.js"></script>
 <script defer src="./workspace.js"></script>
 </body>
 </html>

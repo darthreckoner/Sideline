@@ -35,6 +35,11 @@
     if (board.guides && !["none", "thirds", "lanes"].includes(board.guides)) fail("Invalid spacing guide.");
     if (board.view && !["full", "attack", "defense"].includes(board.view)) fail("Invalid field view.");
     if (board.teachingTeam && !["home", "away"].includes(board.teachingTeam)) fail("Invalid teaching team.");
+    if (board.shapeLines != null) {
+      const shape = board.shapeLines, team = board.teachingTeam || "home";
+      if (typeof shape !== "object" || Array.isArray(shape) || typeof shape.enabled !== "boolean" || !["defense", "offense"].includes(shape.mode) || !Array.isArray(shape.triangles) || shape.triangles.length > 70) fail("Invalid team lines.");
+      if (shape.triangles.some((triangle) => !Array.isArray(triangle) || triangle.length !== 3 || new Set(triangle).size !== 3 || triangle.some((id) => !board.players.some((p) => p.id === id && p.team === team)))) fail("Invalid triangle players.");
+    }
     if (board.activity != null) {
       const a = board.activity;
       if (!["A01", "A02", "A03", "A04", "A05"].includes(a.id) || !text(a.title, 80)) fail("Unknown coaching activity.");
