@@ -347,6 +347,11 @@ a { color: var(--accent); }
   .playbook-row { flex-wrap: wrap; }
   .playbook-row .actions { width: 100%; }
 }
+/* Phones in portrait: the select's own aria-label names it, freeing room for Offside. */
+@media (max-width: 600px) {
+  .shape-team > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .shape-controls button { padding: 6px 8px; }
+}
 @media (max-width: 390px) {
   .shape-controls { gap: 3px; }
   .shape-controls button { padding: 6px 6px; font-size: 12px; }

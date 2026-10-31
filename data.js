@@ -35,6 +35,7 @@
     if (board.guides && !["none", "thirds", "lanes"].includes(board.guides)) fail("Invalid spacing guide.");
     if (board.view && !["full", "attack", "defense"].includes(board.view)) fail("Invalid field view.");
     if (board.teachingTeam && !["home", "away"].includes(board.teachingTeam)) fail("Invalid teaching team.");
+    if (board.offside != null && typeof board.offside !== "boolean") fail("Invalid offside setting.");
     if (board.shapeLines != null) {
       const shape = board.shapeLines, team = board.teachingTeam || "home";
       if (typeof shape !== "object" || Array.isArray(shape) || typeof shape.enabled !== "boolean" || !["defense", "offense"].includes(shape.mode) || !Array.isArray(shape.triangles) || shape.triangles.length > 70) fail("Invalid team lines.");

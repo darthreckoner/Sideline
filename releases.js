@@ -12,4 +12,10 @@ window.SIDELINE_RELEASES = [
       "Find this list again under What's new in the Board menu.",
     ],
   },
+  {
+    version: "0.6.0",
+    changes: [
+      "New Offside button: shades each team's offside zone from the last defender, and offside attackers pulse red as you move them.",
+    ],
+  },
 ];

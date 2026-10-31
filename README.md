@@ -60,6 +60,10 @@ To save your own starting point, put the players, ball and drawings where you wa
 
 Choose Arrow, then Pass for a solid arrow or Run for a dashed arrow. Swipe across the field to place it. Choose Draw to sketch or Erase to remove a line. Move mode won't draw.
 
+### Show offside
+
+Tap **Offside** (the first button above the board) to shade both teams' offside zones. Home attacks the right goal and Away the left. Each zone starts at the deeper of the defending team's second-last player (normally the last outfield defender, with the keeper behind), the ball and the halfway line, and runs to the goal line. Attackers past that line pulse red; level is onside. The zones move as you drag players or the ball, follow Undo, and are saved with the board. A still red ring replaces the pulse when the device asks for reduced motion and in shared images. Coaching activities don't show offside. The board shows offside position only — whether a player is penalised still depends on their involvement in play.
+
 ### Show team lines
 
 On Board, choose Home or Away under **My team**. Your team's markers are larger and outlined; the other team's markers are a little smaller and lighter. Applying a roster lineup selects the side you applied it to. You can also change the teaching team in Coaching → Teaching aids.

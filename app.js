@@ -222,6 +222,7 @@ function refreshShapeLines(value) {
 
 function transferShapeSettings(from, to) {
   if (from.teachingTeam) to.teachingTeam = from.teachingTeam;
+  if (from.offside != null) to.offside = from.offside;
   if (from.shapeLines) {
     to.shapeLines = { enabled: from.shapeLines.enabled, mode: from.shapeLines.mode, triangles: [] };
     refreshShapeLines(to);
@@ -250,6 +251,27 @@ function shapeSegments(value = board) {
   }
   return [...edges.values()];
 }
+
+// Offside for both attacking directions. Home attacks toward the right goal,
+// Away toward the left. An attacker is offside when they are past the halfway
+// line and nearer the goal line than both the ball and the second-last
+// defender (normally the last outfield defender, with the keeper behind).
+// Level is onside. Small-sided coaching activities don't use offside.
+const GOAL_LINE = 14;
+function offsideState(value = board) {
+  if (!value?.offside || value.activity) return [];
+  // A carried ball counts as level with its carrier, not the drawn offset.
+  const ball = value.players.find((p) => p.id === value.ball.carrier && !p.hidden) || value.ball;
+  return ["home", "away"].map((team) => {
+    const dir = team === "home" ? 1 : -1, goal = team === "home" ? P.w - GOAL_LINE : GOAL_LINE;
+    const depth = (x) => x * dir;
+    const defenders = value.players.filter((p) => p.team !== team && !p.hidden).map((p) => p.x).sort((a, b) => depth(b) - depth(a));
+    const line = defenders.length < 2 ? goal : [P.w / 2, defenders[1], ball.x].reduce((a, b) => (depth(b) > depth(a) ? b : a));
+    const players = value.players.filter((p) => p.team === team && !p.hidden && depth(p.x) > depth(line)).map((p) => p.id);
+    return { team, line, goal, players };
+  });
+}
+const offsidePlayers = (value = board) => new Set(offsideState(value).flatMap((zone) => zone.players));
 
 async function loadPreset(format) {
   const data = window.SIDELINE_PRESETS?.[format];
@@ -400,6 +422,41 @@ function label(c, text, x, y, color, rot, radius) {
   c.restore();
 }
 
+function drawOffside(c) {
+  for (const zone of offsideState()) {
+    const left = Math.min(zone.line, zone.goal), width = Math.abs(zone.goal - zone.line);
+    if (width < 1) continue;
+    c.save();
+    c.fillStyle = "#ef44442e";
+    c.fillRect(left, GOAL_LINE, width, P.h - 2 * GOAL_LINE);
+    // Diagonal hatching keeps the zone readable over the striped grass.
+    c.beginPath(); c.rect(left, GOAL_LINE, width, P.h - 2 * GOAL_LINE); c.clip();
+    c.strokeStyle = "#ef444440"; c.lineWidth = 6;
+    c.beginPath();
+    for (let x = left - P.h; x < left + width; x += 36) { c.moveTo(x, P.h); c.lineTo(x + P.h, 0); }
+    c.stroke();
+    c.restore();
+    c.save();
+    c.setLineDash([16, 10]); c.lineWidth = 5; c.strokeStyle = "#ff5a5a";
+    c.beginPath(); c.moveTo(zone.line, GOAL_LINE); c.lineTo(zone.line, P.h - GOAL_LINE); c.stroke();
+    c.restore();
+  }
+}
+
+// A soft red pulse marks offside attackers; reduced motion keeps a steady ring.
+const reducedMotion = () => !!globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+function drawOffsideRing(c, p, radius, live) {
+  c.save(); c.globalAlpha = 1;
+  if (live && !reducedMotion()) {
+    const t = (performance.now() % 1200) / 1200;
+    c.beginPath(); c.arc(p.x, p.y, radius + 6 + t * 16, 0, Math.PI * 2);
+    c.lineWidth = 6 * (1 - t) + 1; c.strokeStyle = `rgba(255, 70, 70, ${0.85 * (1 - t)})`; c.stroke();
+  }
+  c.beginPath(); c.arc(p.x, p.y, radius + 5, 0, Math.PI * 2);
+  c.lineWidth = 5; c.strokeStyle = "#ff3b3b"; c.stroke();
+  c.restore();
+}
+
 function drawShapeLines(c) {
   const segments = shapeSegments();
   if (!segments.length) return;
@@ -427,6 +484,7 @@ function contents(c, { rot = false, live = false } = {}) {
     if (mark.type === "gate") for (const p of [mark.a, mark.b]) { c.beginPath(); c.arc(p.x, p.y, 10, 0, Math.PI * 2); c.fillStyle = "#ffcb54"; c.fill(); }
   }
   c.restore();
+  drawOffside(c);
   drawShapeLines(c);
   c.lineCap = "round";
   c.lineJoin = "round";
@@ -437,11 +495,13 @@ function contents(c, { rot = false, live = false } = {}) {
 
   // Draw the teaching team last so its highlighted markers stay prominent.
   const players = [...board.players].sort((a, b) => Number(a.team === teachingTeam()) - Number(b.team === teachingTeam()));
+  const offside = offsidePlayers();
   for (const p of players) {
     if (p.hidden) continue;
     const fill = board.colors[p.team], style = markerStyle(p);
     const dark = isDark(fill);
     c.save(); c.globalAlpha = style.alpha;
+    if (offside.has(p.id)) drawOffsideRing(c, p, style.radius, live);
     if (style.highlight) {
       c.beginPath(); c.arc(p.x, p.y, style.radius + 5, 0, Math.PI * 2);
       c.lineWidth = 3; c.strokeStyle = "#f4ffdded"; c.stroke();
@@ -488,6 +548,13 @@ function contents(c, { rot = false, live = false } = {}) {
 function draw() {
   if (!board || !preset) return;
   if (!gesture) window.SIDELINE_WORKSPACE?.boardChanged();
+  paint();
+}
+
+// Repaint only; the offside pulse uses this so it doesn't re-save every frame.
+let pulseFrame = 0;
+function paint() {
+  if (!board || !preset) return;
   const d = dpr();
   const g = geometry();
   if (!g.w || !g.h) return;
@@ -518,6 +585,7 @@ function draw() {
     ctx.textAlign = "left";
     ctx.fillText(txt, x + 8, y + 11.5);
   }
+  if (!pulseFrame && !reducedMotion() && offsidePlayers().size) pulseFrame = requestAnimationFrame(() => { pulseFrame = 0; paint(); });
 }
 
 // ---------- input ----------
@@ -1097,7 +1165,7 @@ function applyLineup(team, side) {
 
 function updateBoardOptions(values) {
   cancelGesture(); checkpoint();
-  for (const key of ["view", "guides", "teachingTeam"]) if (values[key] != null) board[key] = values[key];
+  for (const key of ["view", "guides", "teachingTeam", "offside"]) if (values[key] != null) board[key] = values[key];
   if (values.shapeLines) board.shapeLines = { enabled: values.shapeLines.enabled, mode: values.shapeLines.mode, triangles: [] };
   if (values.visibility) {
     const ball = restingBall();
@@ -1112,6 +1180,7 @@ function updateBoardOptions(values) {
 function syncShapeControls() {
   const shape = board.shapeLines || { enabled: false, mode: "defense" };
   $("board-teaching-team").value = teachingTeam();
+  $("show-offside").setAttribute("aria-pressed", String(!!board.offside));
   $("show-lines").setAttribute("aria-pressed", String(shape.enabled));
   for (const mode of ["defense", "offense"]) $("lines-" + mode).setAttribute("aria-pressed", String(shape.enabled && shape.mode === mode));
 }
@@ -1126,6 +1195,12 @@ function selectShapeLines(enabled, mode) {
 
 $("board-teaching-team").onchange = () => {
   if ($("board-teaching-team").value !== teachingTeam()) updateBoardOptions({ teachingTeam: $("board-teaching-team").value });
+};
+$("show-offside").onclick = () => {
+  const enabled = !board.offside;
+  updateBoardOptions({ offside: enabled });
+  if (enabled && board.activity) note("Offside zones are available on formation boards.", 4000);
+  else if (enabled) note(offsidePlayers().size ? "Red pulsing players are offside." : "Shaded zones are offside. Players there pulse red.", 3500);
 };
 $("show-lines").onclick = () => {
   const shape = board.shapeLines || { enabled: false, mode: "defense" };
