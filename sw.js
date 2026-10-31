@@ -1,6 +1,6 @@
 // Cache each release as a complete set so HTML, scripts and presets stay compatible.
 // An updated worker waits until existing Sideline windows close before taking over.
-const CACHE = "sideline-v0.5.9";
+const CACHE = "sideline-v0.6.0";
 const FILES = [
   "./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest",
   "./presets/soccer-field.js", "./presets/soccer-9v9.js", "./presets/soccer-7v7.js",
