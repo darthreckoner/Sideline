@@ -62,7 +62,7 @@ Choose Arrow, then Pass for a solid arrow or Run for a dashed arrow. Swipe acros
 
 ### Show offside
 
-Tap **Offside** (the first button above the board) to shade both teams' offside zones. Home attacks the right goal and Away the left. Each zone starts at the deeper of the defending team's second-last player (normally the last outfield defender, with the keeper behind), the ball and the halfway line, and runs to the goal line. Attackers past that line pulse red; level is onside. The zones move as you drag players or the ball, follow Undo, and are saved with the board. A still red ring replaces the pulse when the device asks for reduced motion and in shared images. Coaching activities don't show offside. The board shows offside position only — whether a player is penalised still depends on their involvement in play.
+Tap **Offside** (between My team and Show lines) to shade both teams' offside zones. Home attacks the right goal and Away the left. Each zone starts at the deeper of the defending team's second-last player (normally the last outfield defender, with the keeper behind), the ball and the halfway line, and runs to the goal line. Attackers past that line pulse red; level is onside. The zones move as you drag players or the ball, follow Undo, and are saved with the board. A still red ring replaces the pulse when the device asks for reduced motion and in shared images. Coaching activities don't show offside. The board shows offside position only — whether a player is penalised still depends on their involvement in play.
 
 ### Show team lines
 
