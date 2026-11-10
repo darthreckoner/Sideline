@@ -93,3 +93,5 @@
 - Default opponent-label follow-up: default lineup application now explicitly sets opposing markers to position display, including clean startup with a saved default. Regular lineup application preserves existing opponent edits. Browser regression seeds opponent number labels then opens default and verifies position labels; 68 unit checks pass. Pending card updated; local only.
 
 - Delete team moved to top team-picker row after New team; retained destructive styling and existing named-team confirmation handler. Removed empty delete footer and updated pending release text. Verified unique button placement and unchanged handler; diff check passes. Local only.
+
+- Match status placement: moved the shared Ready for kickoff / Running / Paused / Halftime label below the Match heading, outside the central broadcast panel. Score and clock stay in the broadcast panel. All 7 match unit tests and diff whitespace check passed. Browser workflow could not run because Playwright is unavailable in the current Node module path; visual verification remains open. Local only.
