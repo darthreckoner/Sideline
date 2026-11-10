@@ -36,9 +36,15 @@ const server = http.createServer((req, res) => {
     });
     await page.reload(); await ready();
     await page.locator('#tab-team').click(); await page.locator('#team-lineup-tab').click();
-    await page.locator('.team-management > summary').click();
     await page.locator('#set-default-lineup').click();
+    await page.evaluate(()=>{
+      const saved=SIDELINE_BOARD.snapshot();
+      saved.board.players.filter(p=>p.team==='away').forEach(p=>p.display='number');
+      SIDELINE_BOARD.install(saved);
+    });
     await page.locator('#tab-board').click(); await page.locator('#menu').click(); await page.locator('#board-default').click();
+    assert.ok(await page.evaluate(()=>SIDELINE_BOARD.snapshot().board.players.filter(p=>p.team==='away').every(p=>p.display==='position')));
+
     await page.locator('#tab-match').click();
     await page.locator('#open-match').click();
     await page.getByLabel('Opponent', {exact:true}).fill('Visitors'); await page.getByLabel('Season', {exact:true}).fill('Fall 2026');
@@ -69,6 +75,35 @@ const server = http.createServer((req, res) => {
     assert.match(await page.locator('#sub-hint').textContent(), /#1 Player 1/);
     await page.locator('#cancel-sub').click();
     await page.locator('#field-player-picker summary').click();
+    // Both canvas taps and accessible buttons exchange occupied slots.
+    const slotsBefore = await page.evaluate(()=>SIDELINE_MATCH_UI.active.slots.slice());
+    await fieldTap(1); await fieldTap(2);
+    let slotsAfter = await page.evaluate(()=>SIDELINE_MATCH_UI.active.slots.slice());
+    assert.equal(slotsAfter[1], slotsBefore[2]); assert.equal(slotsAfter[2], slotsBefore[1]);
+    assert.match(await page.locator('#match-selection').textContent(), /Swapped positions/);
+    await page.locator('#field-player-picker summary').click();
+    await page.locator('#match-field-players button').nth(1).click();
+    await page.locator('#match-field-players button').nth(2).click();
+    assert.deepEqual(await page.evaluate(()=>SIDELINE_MATCH_UI.active.slots), slotsBefore);
+    await page.locator('#match-field-players button').first().click();
+    await page.locator('#match-field-players button').first().click();
+    assert.equal(await page.evaluate(()=>SIDELINE_MATCH_UI.selectedRoster), null);
+    await page.locator('#field-player-picker summary').click();
+    await page.setViewportSize({width:1238,height:800});
+    assert.equal(await page.locator('#match-view').evaluate(el=>el.scrollHeight > el.clientHeight+1), false, 'desktop match fits without page scrolling');
+    const heading = await page.locator('.match-controls .page-heading').boundingBox();
+    const broadcast = await page.locator('.match-broadcast').boundingBox();
+    const actions = await page.locator('.match-actions').boundingBox();
+    assert.ok(heading.x + heading.width <= broadcast.x);
+    assert.ok(broadcast.x + broadcast.width <= actions.x);
+    const strip = await page.locator('#match-strip').boundingBox();
+    const layout = await page.locator('.match-layout').boundingBox();
+    assert.ok(Math.abs(strip.width-layout.width)<2, 'header spans match area');
+    assert.equal(await page.locator('#match-team-name').textContent(), 'Review United');
+    assert.equal(await page.locator('#match-opponent-name').textContent(), 'Visitors');
+    await page.locator('#match-view').evaluate(el=>el.scrollTop=0);
+    if (process.env.SIDELINE_EVIDENCE) await page.screenshot({path:path.join(process.env.SIDELINE_EVIDENCE,'match-header-desktop.png')});
+    await page.setViewportSize({width:844,height:500});
     const boardBefore = await page.evaluate(()=>JSON.stringify(SIDELINE_BOARD.snapshot()));
     await page.locator('#tab-board').click();
     await page.locator('[data-mode="pen"]').click();
@@ -81,6 +116,7 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.evaluate(()=>JSON.stringify(SIDELINE_BOARD.snapshot())),boardBefore);
     for (const size of [{width:390,height:844},{width:320,height:568}]) {
       await page.setViewportSize(size);
+      assert.equal(await page.locator('#match-view').evaluate(el=>el.scrollHeight > el.clientHeight+1), false, 'phone match fits without page scrolling');
       await page.locator('#match-pitch').scrollIntoViewIfNeeded();
       const old = await page.evaluate(()=>SIDELINE_MATCH_UI.active.slots[0]);
       // Select field first so scrolling to the bench does not move the pitch target.
@@ -96,6 +132,41 @@ const server = http.createServer((req, res) => {
         await page.screenshot({path:path.join(process.env.SIDELINE_EVIDENCE,`match-${size.width}.png`)});
       }
     }
+    await page.locator('#match-details').click();
+    await page.getByRole('button',{name:'Discard this match',exact:true}).click();
+    await accept();
+    await page.locator('#matchDialog').waitFor({state:'hidden'});
+    await page.locator('#tab-team').click();
+    await page.locator('#open-team-settings').click();
+    await page.locator('#team-color').selectOption('#ef4444');
+    await page.locator('#team-away-color').selectOption('#ffffff');
+    await page.evaluate(()=>SIDELINE_WORKSPACE.flush());
+    await page.locator('#tab-match').click();
+    await page.locator('#open-match').click();
+    assert.equal(await page.getByLabel('My team color',{exact:true}).inputValue(), '#ef4444');
+    await page.getByLabel('My team plays',{exact:true}).selectOption('away');
+    assert.equal(await page.getByLabel('My team color',{exact:true}).inputValue(), '#ffffff');
+    await page.getByLabel('My team plays',{exact:true}).selectOption('home');
+    assert.equal(await page.getByLabel('My team color',{exact:true}).inputValue(), '#ef4444');
+    await page.getByLabel('My team plays',{exact:true}).selectOption('away');
+    await page.getByRole('button',{name:'My team color: Orange',exact:true}).click();
+    assert.equal(await page.getByRole('button',{name:'My team color: Orange',exact:true}).getAttribute('aria-pressed'),'true');
+    await page.getByLabel('Opponent color',{exact:true}).fill('#2563eb');
+    await page.getByLabel('Opponent',{exact:true}).fill('Home Hosts');
+    await page.getByRole('button',{name:'Prepare match',exact:true}).click();
+    await page.evaluate(()=>SIDELINE_MATCH_UI.flush());
+    await page.reload(); await ready(); await page.locator('#tab-match').click();
+    assert.deepEqual(await page.evaluate(()=>[SIDELINE_MATCH_UI.active.side,SIDELINE_MATCH_UI.active.color,SIDELINE_MATCH_UI.active.opponentColor]),['away','#ff9f1c','#2563eb']);
+    assert.equal(await page.locator('#match-team-name').textContent(),'Home Hosts');
+    assert.equal(await page.locator('#match-opponent-name').textContent(),'Review United');
+    assert.equal(await page.locator('#match-team-name').evaluate(e=>e.style.getPropertyValue('--team-color')),'#2563eb');
+    assert.equal(await page.locator('#match-opponent-name').evaluate(e=>e.style.getPropertyValue('--team-color')),'#ff9f1c');
+    assert.deepEqual(await page.evaluate(()=>[SIDELINE_WORKSPACE.currentTeam().color,SIDELINE_WORKSPACE.currentTeam().awayColor]),['#ef4444','#ffffff']);
+    await page.locator('#match-toggle').click();
+    await page.locator('#match-goal').click();
+    await page.getByRole('button',{name:'#1 Player 1',exact:true}).click();
+    assert.equal(await page.locator('#match-score').textContent(),'0 \u2013 1');
+    console.log('PASS home/away kit defaults, match overrides, reload, home-first scoreboard and saved-team isolation');
     console.log('PASS pre-kickoff Match substitutions independent of Board drawing mode and Board state');
   } finally { await browser.close(); await new Promise(r=>server.close(r)); }
 })().catch(e=>{console.error(e);process.exitCode=1;});

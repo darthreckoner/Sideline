@@ -21,10 +21,7 @@ const DROP_RADIUS = 44;      // dropping the ball this close to a player gives i
 const DRAG_THRESHOLD = 9;    // CSS px before a touch counts as a drag
 const PLAYER_HOLD_MS = 550; // a stationary hold opens the player's label menu
 
-const SWATCHES = [
-  "#ffcb54", "#ff9f1c", "#ef4444", "#ff7eb6", "#a78bfa",
-  "#2563eb", "#5dc2ff", "#1e3a8a", "#ffffff", "#1d1d1f",
-];
+const SWATCHES = window.SIDELINE_DATA.palette.map(([color]) => color);
 const DEFAULT_COLORS = { home: "#ffcb54", away: "#5dc2ff" };
 const TEAM = { home: "Home", away: "Away" };
 
@@ -1023,6 +1020,8 @@ for (const display of ["position", "number"]) {
   };
 }
 
+$("board-setup").onclick = () => { cancelGesture(); syncMenu(); $("boardSetupDialog").showModal(); };
+$("board-setup-close").onclick = () => $("boardSetupDialog").close();
 $("menu").onclick = () => { cancelGesture(); syncMenu(); $("menuDialog").showModal(); };
 $("help").onclick = () => { $("menuDialog").close(); $("helpDialog").showModal(); };
 
@@ -1114,7 +1113,7 @@ function openActivity(activity) {
   installSnapshot({ board: next, start: clone(next) }, "");
 }
 
-function applyLineup(team, side) {
+function applyLineup(team, side, { opponentPositions = false } = {}) {
   const data = window.SIDELINE_DATA;
   window.SIDELINE_WORKSPACE?.forgetPlay();
   const lineup = data.lineup(team, window.SIDELINE_PRESETS), target = window.SIDELINE_PRESETS[team.format];
@@ -1128,6 +1127,7 @@ function applyLineup(team, side) {
   next.teamNames = { ...next.teamNames, [side]: team.name };
   next.colors[side] = team.color;
   const other = side === "home" ? "away" : "home";
+  if (opponentPositions) for (const player of next.players.filter(p => p.team === other)) player.display = player.position ? "position" : "number";
   if (next.colors[other] === team.color) next.colors[other] = SWATCHES.find((c) => c !== team.color);
   next.formations = { home: next.formation || target.defaultFormation, away: next.formation || target.defaultFormation, ...next.formations, [side]: team.formation };
   next.formation = next.formations.home;

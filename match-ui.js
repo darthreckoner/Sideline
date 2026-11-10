@@ -16,6 +16,25 @@
   function act(fn) { try { fn(); persist(); render(); } catch (e) { W.notice(e.message); } }
   function button(parent, text, fn) { const b = node("button", text); b.type = "button"; b.onclick = async () => { try { await fn(); } catch (e) { W.notice(e.message); } }; parent.append(b); return b; }
   function field(label, type, value) { const l = node("label", label), input = node("input"); input.type = type; input.value = value; l.append(input); $("match-body").append(l); return input; }
+  function kitColor(label, value) {
+    const group = node("fieldset"); group.className = "kit-color";
+    group.append(node("legend", label));
+    const swatches = node("div"); swatches.className = "swatches";
+    const customLabel = node("label", "Custom color"), input = node("input");
+    input.type = "color"; input.value = value; input.setAttribute("aria-label", label);
+    customLabel.className = "custom-kit-color"; customLabel.append(input);
+    const refresh = () => {
+      for (const b of swatches.children) { const selected = b.dataset.color === input.value; b.classList.toggle("on", selected); b.setAttribute("aria-pressed", String(selected)); }
+    };
+    for (const [color, name] of window.SIDELINE_DATA.palette) {
+      const b = button(swatches, "", () => { input.value = color; refresh(); });
+      b.dataset.color = color; b.style.background = color;
+      b.setAttribute("aria-label", `${label}: ${name}`); b.title = name;
+    }
+    input.oninput = input.onchange = refresh;
+    group.append(swatches, customLabel); $("match-body").append(group); refresh();
+    return { get value() { return input.value; }, set value(color) { input.value = color; refresh(); } };
+  }
   function show(mode, title) { dialogMode = mode; $("match-title").textContent = title; $("match-body").replaceChildren(); if (!$("matchDialog").open) $("matchDialog").showModal(); }
   let pitchState = null;
   function context() {
@@ -23,6 +42,7 @@
     const side = active?.side || "home";
     const board = B.make(window.SIDELINE_PRESETS[team.format], team.formation);
     board.teachingTeam = side; board.colors[side] = team.color;
+    if (active?.opponentColor) board.colors[side === "home" ? "away" : "home"] = active.opponentColor;
     const markers = board.players.filter(p=>p.team === side);
     board.players = board.players.filter(p=>p.team !== side);
     markers.forEach((marker,i)=>{
@@ -40,6 +60,12 @@
     canvas.width = Math.round(box.width); canvas.height = Math.round(box.height);
     B.preview(canvas, board, true);
     $("match-context").textContent = active ? `${active.teamName} vs ${active.opponent}` : `${team.name} - current Team lineup`;
+    const ownHome = !active || active.side === "home";
+    $("match-team-name").textContent = ownHome ? team.name : active.opponent;
+    $("match-opponent-name").textContent = ownHome ? active?.opponent || "Opponent" : team.name;
+    $("match-team-name").style.setProperty("--team-color", board.colors.home);
+    $("match-opponent-name").style.setProperty("--team-color", board.colors.away);
+
   }
   function restoreBoard() { renderPitch(); }
   function syncPlayers() { renderPitch(); }
@@ -51,6 +77,13 @@
     if (!team.roster.length || !markers.length) { $("match-body").append(node("p", "Choose your starters in Team before starting a match.")); button($("match-body"), "Open Team", () => { $("matchDialog").close(); W.switchTab("team"); }); return; }
     $("match-body").append(node("p", team.name));
     const opponent = field("Opponent", "text", ""); opponent.maxLength = 80;
+    const venueLabel = node("label", "My team plays"), venue = node("select");
+    for (const [value, text] of [["home", "Home"], ["away", "Away"]]) { const o = node("option", text); o.value = value; venue.append(o); }
+    venue.setAttribute("aria-label", "My team plays");
+    venueLabel.append(venue); $("match-body").append(venueLabel);
+    const ownColor = kitColor("My team color", team.color);
+    const opponentColor = kitColor("Opponent color", board.colors.away);
+    venue.onchange = () => { ownColor.value = venue.value === "home" ? team.color : team.awayColor || "#ffffff"; };
     const half = field("Minutes per half", "number", 25); half.min = 1; half.max = 90;
     const season = field("Season", "text", seasons[team.id]?.at(-1) || String(new Date().getFullYear())); season.maxLength = 80;
     button($("match-body"), "Prepare match", async () => {
@@ -61,8 +94,9 @@
         const roles = window.SIDELINE_PRESETS[board.format].formationPositions[board.formations?.[side] || board.formation];
         const lineup = { ...team, format: board.format, formation: board.formations?.[side] || board.formation,
           assignments: roles.map((role) => markers.find((p) => p.lineupSlot === roles.indexOf(role) || (p.lineupSlot == null && p.position === role))?.rosterId || null) };
-        const prepared = M.create({ id: window.SIDELINE_DATA.id(), team: lineup, side, halfMinutes: Number(half.value), season: name, opponent: opponent.value.trim() || "Opponent" });
-        prepared.color = team.color;
+        const prepared = M.create({ id: window.SIDELINE_DATA.id(), team: lineup, side: venue.value, halfMinutes: Number(half.value), season: name, opponent: opponent.value.trim() || "Opponent" });
+        prepared.color = ownColor.value;
+        prepared.opponentColor = opponentColor.value;
         active = prepared; seasons[team.id] ||= []; if (!seasons[team.id].includes(name)) seasons[team.id].push(name);
         await persist(); $("matchDialog").close(); pickedField = pickedBench = null; render();
       } catch (e) { W.notice(e.message); }
@@ -80,13 +114,30 @@
     }
     pickedField = pickedBench = null; render();
   }
+  function chooseField(slot) {
+    if (!active) return;
+    if (pickedField != null && pickedField !== slot && !pickedBench) {
+      const first = active.roster.find(p => p.id === active.slots[pickedField]);
+      const second = active.roster.find(p => p.id === active.slots[slot]);
+      act(() => {
+        M.swapPositions(active, pickedField, slot);
+        lastSwap = `Swapped positions: #${first.number} ${first.name} and #${second.number} ${second.name}.`;
+      });
+      pickedField = pickedBench = null;
+      render();
+      return;
+    }
+    pickedField = pickedField === slot ? null : slot;
+    selection();
+    renderPitch();
+  }
   function tap(player, matchTap = false) {
     if (!matchTap) return false;
     const { team, side, markers } = context();
     if (!active && !team) return false;
     if (player.team !== (active?.side || side) || !player.rosterId) return false;
-    pickedField = active ? active.slots.indexOf(player.rosterId) : markers.findIndex((p) => p.id === player.id);
-    selection(); return true;
+    chooseField(active ? active.slots.indexOf(player.rosterId) : markers.findIndex((p) => p.id === player.id));
+    return true;
   }
   function renderBench() {
     const { team, markers } = context();
@@ -95,12 +146,12 @@
     const bench = roster.filter((p) => !slots.includes(p.id));
     $("sideline").hidden = !active;
     const selected = roster.find(p=>p.id === (pickedField != null ? slots[pickedField] : pickedBench));
-    const hint = selected ? `#${selected.number} ${selected.name}: ${pickedField != null ? "choose a substitute" : "choose an on-field player"}` : "Tap a player and a substitute to swap";
-    $("match-selection").textContent = active ? (selected ? hint : lastSwap || "Tap a player and a substitute to swap") : "Prepare a match to enable substitutions.";
+    const hint = selected ? `#${selected.number} ${selected.name}: ${pickedField != null ? "choose another on-field player or a substitute" : "choose an on-field player"}` : "Tap two players to swap positions, or a player and a substitute";
+    $("match-selection").textContent = active ? (selected ? hint : lastSwap || "Tap two players to swap positions, or a player and a substitute") : "Prepare a match to enable substitutions.";
     const key = JSON.stringify([slots, roster.map(p=>[p.id,p.number,p.name]), pickedField]);
     if (key !== fieldSignature) {
       fieldSignature = key; const list = $("match-field-players"); list.replaceChildren();
-      slots.forEach((id,i)=>{const p=roster.find(p=>p.id===id); if(p) { const b=button(list, `#${p.number} ${p.name}`,()=>{ pickedField=i; selection(); renderPitch(); }); b.setAttribute("aria-pressed",String(i===pickedField)); }});
+      slots.forEach((id,i)=>{const p=roster.find(p=>p.id===id); if(p) { const b=button(list, `#${p.number} ${p.name}`,()=>{ chooseField(i); }); b.setAttribute("aria-pressed",String(i===pickedField)); }});
     }
     $("sub-hint").textContent = hint;
     $("cancel-sub").hidden = pickedField == null && !pickedBench;
@@ -135,7 +186,9 @@
     $("match-end").hidden = active.phase !== "playing";
     $("match-end").textContent = active.half === 1 ? "End of half" : "End match";
     $("match-goal").disabled = active.phase !== "playing";
-    $("match-score").textContent = `${active.goals.filter((g) => g.playerId !== null).length} – ${active.goals.filter((g) => g.playerId === null).length}`;
+    const ownGoals = active.goals.filter(g => g.playerId !== null).length;
+    const opponentGoals = active.goals.filter(g => g.playerId === null).length;
+    $("match-score").textContent = active.side === "away" ? `${opponentGoals} \u2013 ${ownGoals}` : `${ownGoals} \u2013 ${opponentGoals}`;
     tick();
   }
   function goals() {

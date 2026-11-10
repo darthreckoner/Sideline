@@ -18,6 +18,7 @@
 <section id="board-view" class="board-workspace" role="tabpanel" aria-labelledby="tab-board">
   <div class="board-content">
     <div class="board-toolbar">
+    <button id="board-setup" aria-haspopup="dialog">Quick board setup</button>
     <div class="shape-controls" aria-label="Team and line controls">
       <label class="shape-team"><span>My team</span><select id="board-teaching-team" aria-label="My team"><option value="home">Home</option><option value="away">Away</option></select></label>
       <button type="button" id="show-lines" aria-pressed="false">Show lines</button>
@@ -55,15 +56,19 @@
 </section>
 
 <section id="match-view" class="workspace" role="tabpanel" aria-labelledby="tab-match" hidden>
-  <header class="page-heading"><div><p class="eyebrow">SIDELINE</p><h1 tabindex="-1">Match</h1><p id="match-context">Prepare a lineup in Team, then set up your match.</p></div></header>
-  <div id="match-strip" class="match-strip">
-    <div class="match-status"><span id="match-phase">Match setup</span><span id="match-clock" role="timer"></span><span id="match-stoppage"></span><span id="match-score" aria-label="Score"></span></div>
-    <div class="match-actions"><button id="open-match">Match setup</button><button id="match-toggle" hidden>Begin first half</button><button id="match-goal" hidden>Goal</button><button id="match-end" hidden>End of half</button><button id="match-details" hidden>Details</button></div>
-    <p id="match-selection" role="status" aria-live="polite"></p>
+  <div class="match-stage">
+    <div id="match-strip" class="match-controls match-strip">
+      <header class="page-heading"><div><p class="eyebrow">SIDELINE</p><h1 tabindex="-1">Match</h1><p id="match-context">Prepare a lineup in Team, then set up your match.</p></div></header>
+      <div class="match-broadcast">
+        <div class="broadcast-score"><span id="match-team-name" class="broadcast-team"></span><span id="match-score" aria-label="Score"></span><span id="match-opponent-name" class="broadcast-team"></span></div>
+        <div class="match-status"><span id="match-phase">Match setup</span><span id="match-clock" role="timer"></span><span id="match-stoppage"></span></div>
+      </div>
+        <div class="match-actions"><button id="open-match">Match setup</button><button id="match-toggle" hidden>Begin first half</button><button id="match-goal" hidden>Goal</button><button id="match-end" hidden>End of half</button><button id="match-details" hidden>Details</button></div>
+        <p id="match-selection" role="status" aria-live="polite"></p>
+      <div id="match-prereq" class="panel"><p id="match-prereq-text"></p><button data-open-tab="team">Open Team</button></div>
+    </div>
+    <div class="match-layout"><div class="match-pitch"><canvas id="match-pitch" aria-label="Match lineup: tap two players to swap positions or a player and substitute"></canvas></div><aside id="sideline" aria-label="Substitutes" hidden><strong>Subs</strong><p id="sub-hint" aria-live="polite">Tap a player, then a sub</p><div id="sideline-players"></div><button id="cancel-sub" hidden>Cancel</button><details id="field-player-picker"><summary>Select an on-field player</summary><div id="match-field-players"></div></details></aside></div>
   </div>
-  <div id="match-prereq" class="panel"><p id="match-prereq-text"></p><button data-open-tab="team">Open Team</button></div>
-  <div class="match-layout"><div class="match-pitch"><canvas id="match-pitch" aria-label="Match lineup: tap a player to substitute"></canvas></div><aside id="sideline" aria-label="Substitutes" hidden><strong>Subs</strong><p id="sub-hint" aria-live="polite">Tap a player, then a sub</p><div id="sideline-players"></div><button id="cancel-sub" hidden>Cancel</button><details id="field-player-picker"><summary>Select an on-field player</summary><div id="match-field-players"></div></details></aside></div>
-  <p class="quiet">Tap a player and a substitute to swap them. Match time continues when you switch tabs.</p>
 </section>
 
 <section id="coaching-view" class="workspace" role="tabpanel" aria-labelledby="tab-coaching" hidden>
@@ -83,20 +88,16 @@
 
 <section id="team-view" class="workspace" role="tabpanel" aria-labelledby="tab-team" hidden>
   <header class="page-heading"><div><p class="eyebrow">SIDELINE</p><h1 tabindex="-1">Team setup</h1><p>Prepare the lineup, then apply it to Board.</p></div><span class="device-status" id="team-status" role="status"></span></header>
-  <div class="team-picker"><label class="grow">Your teams<select id="team-picker"></select></label><button id="new-team">New team</button></div>
+  <div class="team-picker"><label class="grow">Your teams<select id="team-picker"></select></label><button id="team-stats" class="accent">Game &amp; season stats</button><button id="open-team-settings">Team settings</button><button id="new-team">New team</button><button id="delete-team">Delete team</button></div>
   <div class="subnav team-subnav"><button id="team-roster-tab" class="on" aria-pressed="true">Roster</button><button id="team-lineup-tab" aria-pressed="false">Lineup</button></div>
-  <div class="team-columns"><section id="roster-panel" class="panel"><div class="section-heading"><h2>Roster <small id="roster-count"></small></h2><button id="add-player" class="accent">+ Add player</button></div><p class="quiet">Check the players available for this lineup. Anyone you leave unchecked stays on your roster.</p><div id="roster-list"></div><p id="roster-empty" class="empty-state">Add your players to prepare a lineup.</p></section>
-    <section id="lineup-panel" class="panel"><div class="section-heading"><h2>Lineup</h2><span id="lineup-count" class="quiet"></span></div><canvas id="lineup-preview" width="1000" height="620" aria-label="Planned lineup preview"></canvas><div id="lineup-slots" class="lineup-slots"></div><h3>Bench</h3><div id="bench-list" class="bench-list"></div><label class="check-label"><input id="short-handed" type="checkbox"> Apply with empty positions (short-handed)</label><div class="button-row"><label>Apply to<select id="apply-side"><option value="home">Home</option><option value="away">Away</option></select></label><button id="apply-lineup" class="accent grow">Apply to board</button></div><p id="lineup-error" class="form-error" role="alert"></p><p class="quiet">Check your lineup above, then tap Apply to board when you're ready. To demonstrate a play, tap Set position on the board afterward.</p></section></div>
-  <details class="panel team-management"><summary>Lineup options &amp; team settings<span>Saved lineups, default board, stats and files</span></summary>  <details id="team-settings" class="panel"><summary>Team settings <span>Name, format, color and team files</span></summary><div class="settings-grid"><label>Team name<input id="team-name" maxlength="48" placeholder="Team name"></label><label>Format<select id="team-format"><option value="9v9">9v9</option><option value="7v7">7v7</option></select></label><label>Formation<select id="team-formation"></select></label><label>Team color<select id="team-color"></select></label></div><div class="button-row"><button id="copy-team">Duplicate team</button><button id="export-team">Export team</button><button class="import-file">Import file</button><button id="delete-team">Delete team</button></div></details>
-  <div class="button-row"><button id="set-default-lineup">Use starting lineup as default board</button><button id="clear-default-lineup">Clear default</button><button id="team-stats">Game &amp; season stats</button></div><p id="default-lineup-status" class="quiet"></p><div class="filter-row"><label class="grow">Saved lineups<select id="saved-lineups"></select></label><button id="save-lineup">Save lineup as…</button><button id="reset-availability">Everyone available</button></div>
-</details>
-  <details class="panel quick-setup"><summary>Quick board setup <span>No roster needed</span></summary>
-    <h3>Format</h3><div class="seg" id="formatSeg"></div>
-    <label>Formation for<select id="setup-side"><option value="home">Home</option><option value="away">Away</option><option value="both">Both teams</option></select></label>
-    <div class="formation-controls"><label>Formation<select id="formation" aria-describedby="formation-help"></select></label><button type="button" id="reset-formation">Reset both teams</button></div>
-    <p id="formation-help" class="quiet">Choose a formation for Home, Away or both. Reset both teams clears your drawings and saved starting point. Tap Undo to bring the old board back.</p>
-    <h3>Home color</h3><div class="swatches" id="sw-home"></div><h3>Away color</h3><div class="swatches" id="sw-away"></div><button class="wide" data-open-tab="board">Back to board</button>
-  </details>
+  <div class="team-columns panel"><section id="roster-panel" class="panel"><div class="section-heading"><h2>Roster <small id="roster-count"></small></h2><button id="add-player" class="accent">+ Add player</button></div><p class="quiet">Check the players available for this lineup. Anyone you leave unchecked stays on your roster.</p><div class="roster-actions"><button id="reset-availability">Everyone available</button></div><div id="roster-list"></div><p id="roster-empty" class="empty-state">Add your players to prepare a lineup.</p></section>
+    <section id="lineup-panel" class="panel"><div class="section-heading"><h2>Lineup</h2><span id="lineup-count" class="quiet"></span></div><div class="saved-lineup-controls"><label>Saved lineup<select id="saved-lineups"></select></label><button id="save-lineup">Save lineup as...</button></div><canvas id="lineup-preview" width="1000" height="620" aria-label="Planned lineup preview"></canvas><div id="lineup-slots" class="lineup-slots"></div><h3>Bench</h3><div id="bench-list" class="bench-list"></div><label class="check-label"><input id="short-handed" type="checkbox"> Apply with empty positions (short-handed)</label><div class="button-row"><label>Apply to<select id="apply-side"><option value="home">Home</option><option value="away">Away</option></select></label><button id="apply-lineup" class="accent grow">Apply to board</button></div><p id="lineup-error" class="form-error" role="alert"></p><p class="quiet">Check your lineup above, then tap Apply to board when you're ready. To demonstrate a play, tap Set position on the board afterward.</p><div class="board-default-settings"><h3>Board default</h3><p id="default-lineup-status" class="quiet"></p><div class="button-row"><button id="set-default-lineup">Use this starting lineup</button><button id="clear-default-lineup">Use standard formation</button></div></div></section></div>
+  <section id="team-settings" class="panel team-settings-card" aria-labelledby="team-settings-title">
+    <div class="section-heading"><h2 id="team-settings-title">Team settings</h2><span class="quiet">Saved automatically</span></div>
+    <div class="settings-grid"><label>Team name<input id="team-name" maxlength="48" placeholder="Team name"></label><label>Format<select id="team-format"><option value="9v9">9v9</option><option value="7v7">7v7</option></select></label><label>Formation<select id="team-formation"></select></label><label>Home color<select id="team-color"></select></label><label>Away color<select id="team-away-color"></select></label></div>
+    <div class="team-files"><h3>Team files</h3><div class="button-row"><button id="copy-team">Duplicate team</button><button id="export-team">Export team</button><button class="import-file">Import file</button></div></div>
+  </section>
+
 
 </section>
 
@@ -179,7 +180,7 @@
     <p>On Board, choose your team and tap Show lines. Defense connects players in the same position group; Offense shows triangles between teammates. Lines follow the players as you move them. Triangles show spacing, not necessarily an open pass. Turn lines off and on to make new triangles from the current positions.</p>
     <p>Use Teaching aids in Coaching to show guides, focus on one half or hide players. Defensive position lines are for formation boards, not activity diagrams.</p>
     <p>A T marks a target player. OFF marks the defender who has stopped in the U-10 activity.</p>
-    <p>In Team, use Quick board setup without adding players, or make a roster and choose a lineup. Check the preview, then tap Apply to board. Editing your team leaves the board as it is.</p>
+    <p>On Board, use Setup without adding players. In Team, make a roster and choose a lineup. Check the preview, then tap Apply to board. Editing your team leaves the board as it is.</p>
     <h3>Save and use offline</h3>
     <p>Your current board is saved on this device. Tap Save to keep a named board in My playbook, or Share to send a picture. Export your board, playbook or team to keep a backup somewhere else. Team and playbook imports make copies. Opening an imported board replaces the current board, but Undo brings it back.</p>
     <p>Turn your phone sideways for a wider field, or use it upright. For offline use, open Sideline while you're online and check the offline status in Menu. On an iPhone or iPad, use Safari's Share menu to add Sideline to your Home Screen.</p>
@@ -191,6 +192,14 @@
 <dialog id="rosterDialog" aria-labelledby="roster-title"><form id="roster-form"><div class="dialog-title"><h2 id="roster-title">Add player</h2><button type="button" class="x" data-close="rosterDialog" aria-label="Cancel">Close</button></div><label>Name or nickname<input id="roster-name" maxlength="48" required autocomplete="off"></label><label>Jersey number<input id="roster-number" type="number" min="0" max="99" step="1" inputmode="numeric" required></label><label>Role to try (optional)<select id="roster-role"><option value="">Any role</option></select></label><button type="submit" class="accent wide">Save player</button><p id="roster-error" class="form-error" role="alert"></p></form></dialog>
 <dialog id="confirmDialog" aria-labelledby="confirm-title"><form method="dialog"><div class="dialog-title"><h2 id="confirm-title">Review change</h2><button value="cancel" class="x" aria-label="Cancel">Close</button></div><p id="confirm-message"></p><div class="button-row"><button value="cancel" class="grow">Cancel</button><button id="confirm-accept" value="accept" class="accent grow">Continue</button></div></form></dialog>
 <dialog id="sourceDialog" aria-labelledby="source-title"><div class="dialog-title"><h2 id="source-title">How to play &amp; source</h2><button class="x" data-close="sourceDialog" aria-label="Close">Close</button></div><div id="source-details"></div></dialog>
+<dialog id="boardSetupDialog" aria-labelledby="board-setup-title"><div class="dialog-title"><h2 id="board-setup-title">Quick board setup</h2><button class="x" id="board-setup-close" aria-label="Close board setup">Close</button></div><p>No roster needed</p>
+    <h3>Format</h3><div class="seg" id="formatSeg"></div>
+    <label>Formation for<select id="setup-side"><option value="home">Home</option><option value="away">Away</option><option value="both">Both teams</option></select></label>
+    <div class="formation-controls"><label>Formation<select id="formation" aria-describedby="formation-help"></select></label><button type="button" id="reset-formation">Reset both teams</button></div>
+    <p id="formation-help" class="quiet">Choose a formation for Home, Away or both. Reset both teams clears your drawings and saved starting point. Tap Undo to bring the old board back.</p>
+    <h3>Home color</h3><div class="swatches" id="sw-home"></div><h3>Away color</h3><div class="swatches" id="sw-away"></div>
+
+</dialog>
 <dialog id="matchDialog" aria-labelledby="match-title"><div class="dialog-title"><h2 id="match-title">Match</h2><button class="x" id="match-close" aria-label="Close match">Close</button></div><div id="match-body"></div></dialog>
 <input id="import-input" type="file" accept=".json,application/json" hidden>
 <div id="app-notice" class="app-notice" role="status" aria-live="polite" hidden></div>

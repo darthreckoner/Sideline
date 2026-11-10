@@ -257,7 +257,10 @@
     const team = currentTeam(); if (!team) return;
     const picker = el("team-picker"); picker.replaceChildren();
     for (const t of teams) { const option = create("option", "", t.name || "Unnamed team"); option.value = t.id; picker.append(option); } picker.value = team.id;
-    el("team-name").value = team.name; el("team-format").value = team.format; el("team-color").value = team.color;
+    for (const [id, color] of [["team-color", team.color], ["team-away-color", team.awayColor || "#ffffff"]]) {
+      if (![...el(id).options].some(o => o.value === color)) { const o = create("option", "", `Custom (${color})`); o.value = color; el(id).append(o); }
+    }
+    el("team-name").value = team.name; el("team-format").value = team.format; el("team-color").value = team.color; el("team-away-color").value = team.awayColor || "#ffffff";
     const options = el("team-formation"); options.replaceChildren();
     for (const formation of Object.keys(presets[team.format].formations)) { const option = create("option", "", formation); option.value = formation; options.append(option); } options.value = team.formation;
     const savedChoices = el("saved-lineups"); savedChoices.replaceChildren();
@@ -299,7 +302,8 @@
     el("lineup-error").textContent = "";
   }
   el("team-picker").onchange = () => { selectedTeam = el("team-picker").value; renderTeam(); scheduleTeamSave(); };
-  el("new-team").onclick = () => { const team = D.newTeam(presets); teams.push(team); selectedTeam = team.id; renderTeam(); scheduleTeamSave(); el("team-settings").open = true; el("team-name").focus(); el("team-name").select(); };
+  el("open-team-settings").onclick = () => { el("team-settings").scrollIntoView({ block: "start" }); el("team-name").focus({ preventScroll: true }); };
+  el("new-team").onclick = () => { const team = D.newTeam(presets); teams.push(team); selectedTeam = team.id; renderTeam(); scheduleTeamSave(); el("team-settings").scrollIntoView({ block: "start" }); el("team-name").focus(); el("team-name").select(); };
   el("copy-team").onclick = () => { const copied = D.copyTeam(currentTeam(), presets); copied.name = `${copied.name} copy`.slice(0, 48); teams.push(copied); selectedTeam = copied.id; renderTeam(); scheduleTeamSave(); };
   el("delete-team").onclick = async () => { if (await confirmChange(`Delete "${currentTeam().name}" and its roster from this device? Your saved boards won't change.`, "Delete team")) { teams = teams.filter((t) => t.id !== selectedTeam); if (!teams.length) teams.push(D.newTeam(presets)); selectedTeam = teams[0].id; renderTeam(); scheduleTeamSave(); } };
   el("save-lineup").onclick = () => chooseName("Save lineup as", "", async (name) => {
@@ -325,12 +329,13 @@
     setCurrentTeam({ ...D.changeShape(team, format, formation, presets), activeLineup: "" }); renderTeam(); scheduleTeamSave(); notice("Check your lineup for the new formation. Your board hasn't changed.");
   }
   el("team-format").onchange = el("team-formation").onchange = changeTeamShape;
-  const colorNames = ["Gold", "Orange", "Red", "Pink", "Violet", "Blue", "Sky", "Navy", "White", "Black"];
-  ["#ffcb54", "#ff9f1c", "#ef4444", "#ff7eb6", "#a78bfa", "#2563eb", "#5dc2ff", "#1e3a8a", "#ffffff", "#1d1d1f"].forEach((color, i) => { const option = create("option", "", colorNames[i]); option.value = color; el("team-color").append(option); });
+  D.palette.forEach(([color, name]) => { const option = create("option", "", name); option.value = color; el("team-color").append(option); el("team-away-color").append(option.cloneNode(true)); });
+  el("team-away-color").onchange = () => { currentTeam().awayColor = el("team-away-color").value; renderTeam(); scheduleTeamSave(); };
   el("team-color").onchange = () => { currentTeam().color = el("team-color").value; renderTeam(); scheduleTeamSave(); };
   el("short-handed").onchange = () => { currentTeam().shortHanded = el("short-handed").checked; currentTeam().activeLineup = ""; scheduleTeamSave(); };
   for (const section of ["roster", "lineup"]) el(`team-${section}-tab`).onclick = () => {
     el("team-view").dataset.section = section;
+    el(`${section}-panel`).scrollIntoView({ block: "start" });
     for (const name of ["roster", "lineup"]) { el(`team-${name}-tab`).classList.toggle("on", name === section); el(`team-${name}-tab`).setAttribute("aria-pressed", String(name === section)); }
   };
   function openPlayer(player) {
@@ -366,7 +371,7 @@
 
   async function openDefault() {
     try {
-      if (defaultLineup) B.applyLineup(defaultLineup, "home");
+      if (defaultLineup) B.applyLineup(defaultLineup, "home", { opponentPositions: true });
       else B.install({ board: B.make(presets[B.snapshot().board.format]), start: null });
       openedPlay = null; switchTab("board");
     } catch (error) { notice(error.message); }
@@ -382,7 +387,7 @@
     try {
       const [savedDraft, savedTeams, savedDefault] = await Promise.all([Store.run("workspace", "get", "current"), Store.run("workspace", "get", "teams"), Store.run("workspace", "get", "default-lineup")]);
       if (savedDefault) defaultLineup = D.readTeam(savedDefault.team, presets);
-      if (!savedDraft && defaultLineup) B.applyLineup(defaultLineup, "home");
+      if (!savedDraft && defaultLineup) B.applyLineup(defaultLineup, "home", { opponentPositions: true });
       if (savedDraft) B.install(D.readSnapshot(savedDraft.snapshot, presets), "Recovered your last board draft.", false);
       if (savedTeams) { teams = savedTeams.teams.map((team) => D.readTeam(team, presets)); selectedTeam = savedTeams.selectedTeam; }
       storageStatus("Saved on this device");

@@ -39,6 +39,11 @@
     m.substitutions.push({ outgoing: m.slots[slot], incoming, half: m.half, elapsed: m.elapsed });
     m.slots[slot] = incoming;
   }
+  function swapPositions(m, first, second) {
+    if (m.phase === "finished") throw Error("The match is finished.");
+    if (![first, second].every(slot => Number.isInteger(slot) && slot >= 0 && slot < m.slots.length && m.slots[slot]) || first === second) throw Error("Choose two different on-field players.");
+    [m.slots[first], m.slots[second]] = [m.slots[second], m.slots[first]];
+  }
   function goal(m, playerId, now = Date.now()) {
     if (m.phase !== "playing") throw Error("Begin a half to record a goal.");
     if (playerId !== null && !m.roster.some((p) => p.id === playerId)) throw Error("Choose a scorer.");
@@ -54,7 +59,7 @@
     }
     return [...players.values()];
   }
-  const api = { create, elapsed, times, toggle, endHalf, secondHalf, clock, substitute, goal, totals };
+  const api = { create, elapsed, times, toggle, endHalf, secondHalf, clock, substitute, swapPositions, goal, totals };
   root.SIDELINE_MATCH = api;
   if (typeof module !== "undefined") module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

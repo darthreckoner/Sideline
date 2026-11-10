@@ -73,14 +73,16 @@
 
   function newTeam(presets) {
     const format = presets["9v9"] ? "9v9" : Object.keys(presets)[0];
-    return { id: id(), name: "My team", format, formation: presets[format].defaultFormation, color: "#ffcb54", roster: [], assignments: Array(presets[format].playerCount).fill(null), shortHanded: false };
+    return { id: id(), name: "My team", format, formation: presets[format].defaultFormation, color: "#ffcb54", awayColor: "#ffffff", roster: [], assignments: Array(presets[format].playerCount).fill(null), shortHanded: false };
   }
 
   function readTeam(input, presets) {
     if (!input || !text(input.id) || !input.id || !Object.hasOwn(presets, input.format) || !text(input.name, 48) || !color(input.color)) fail("Invalid team settings.");
+    if (input.awayColor != null && !color(input.awayColor)) fail("Invalid away color.");
     const preset = presets[input.format];
     if (!Object.hasOwn(preset.formations, input.formation) || !Array.isArray(input.roster) || input.roster.length > 40) fail("Invalid roster or formation.");
     const team = copy(input), ids = new Set();
+    team.awayColor ||= "#ffffff";
     for (const p of team.roster) {
       if (!text(p.id) || !p.id || ids.has(p.id) || !text(p.name, 48) || !p.name.trim() || !Number.isInteger(p.number) || p.number < 0 || p.number > 99 || typeof p.available !== "boolean") fail("Invalid roster player.");
       if (p.role != null && (!text(p.role, 24) || (p.role && !Object.hasOwn(preset.positions, p.role)))) fail("Invalid preferred role.");
@@ -139,7 +141,13 @@
     return result;
   }
 
-  const api = { copy, id, color, readBoard, readSnapshot, readFile, newTeam, readTeam, lineup, changeShape, assign, copyTeam };
+  const palette = [
+    ["#ffcb54", "Gold"], ["#ffe000", "Yellow"], ["#ff9f1c", "Orange"],
+    ["#ef4444", "Red"], ["#dc168b", "Magenta"], ["#7027cc", "Purple"],
+    ["#2563eb", "Blue"], ["#00bcd4", "Cyan"], ["#159447", "Green"],
+    ["#1e3a8a", "Navy"], ["#ffffff", "White"], ["#1d1d1f", "Black"]
+  ];
+  const api = { palette, copy, id, color, readBoard, readSnapshot, readFile, newTeam, readTeam, lineup, changeShape, assign, copyTeam };
   root.SIDELINE_DATA = api;
   if (typeof module !== "undefined") module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

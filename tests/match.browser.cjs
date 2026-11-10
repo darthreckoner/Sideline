@@ -20,7 +20,9 @@ const server = http.createServer((req, res) => {
   async function ready() { await page.waitForFunction(() => window.SIDELINE_MATCH_UI && document.querySelector('#team-picker').options.length > 0); if (await page.locator('#releaseDialog').evaluate(d => d.open)) await page.locator('#release-dismiss').click(); }
   async function fieldTap(index = 0) {
     const pt = await page.evaluate((index) => { const m=SIDELINE_MATCH_UI.active; const p=SIDELINE_BOARD.make(SIDELINE_PRESETS[m.format],m.formation).players.filter(p=>p.team===m.side)[index]; const b=document.querySelector('#match-pitch').getBoundingClientRect(),rot=b.height>b.width,scale=Math.min(b.width/(rot?620:1000),b.height/(rot?1000:620));return {x:b.left+(b.width-(rot?620:1000)*scale)/2+(rot?p.y:p.x)*scale,y:b.top+(b.height-(rot?1000:620)*scale)/2+(rot?1000-p.x:p.y)*scale}; }, index);
-    await page.mouse.click(pt.x, pt.y);
+    await page.evaluate(({x,y})=>{const v=document.getElementById('match-view'),bar=document.getElementById('match-strip').getBoundingClientRect(),nav=document.querySelector('.app-tabs').getBoundingClientRect();if(y>nav.top-10)v.scrollTop+=y-nav.top+30;else if(y<bar.bottom+10)v.scrollTop-=bar.bottom+30-y;},pt);
+    const fresh = await page.evaluate((index)=>{const m=SIDELINE_MATCH_UI.active,p=SIDELINE_BOARD.make(SIDELINE_PRESETS[m.format],m.formation).players.filter(p=>p.team===m.side)[index],b=document.querySelector('#match-pitch').getBoundingClientRect(),rot=b.height>b.width,scale=Math.min(b.width/(rot?620:1000),b.height/(rot?1000:620));return {x:b.left+(b.width-(rot?620:1000)*scale)/2+(rot?p.y:p.x)*scale,y:b.top+(b.height-(rot?1000:620)*scale)/2+(rot?1000-p.x:p.y)*scale};},index);
+    await page.mouse.click(fresh.x, fresh.y);
   }
   try {
     await page.clock.install();
@@ -34,7 +36,6 @@ const server = http.createServer((req, res) => {
     });
     await page.reload(); await ready();
     await page.locator('#tab-team').click(); await page.locator('#team-lineup-tab').click();
-    await page.locator('.team-management > summary').click();
     await page.locator('#set-default-lineup').click();
     await page.locator('#tab-board').click(); await page.locator('#menu').click(); await page.locator('#board-default').click();
     await page.locator('#tab-match').click();
@@ -74,7 +75,7 @@ const server = http.createServer((req, res) => {
     await page.locator('#tab-match').click(); assert.equal(await page.locator('#match-toggle').textContent(),'Resume');
     await page.locator('#match-end').click(); await accept();
     await page.waitForFunction(()=>!SIDELINE_MATCH_UI.active);
-    await page.locator('#tab-team').click(); await page.locator('.team-management').evaluate(d => d.open = true); await page.locator('#team-stats').click();
+    await page.locator('#tab-team').click(); await page.locator('#team-stats').click();
     assert.ok((await page.locator('#match-body').textContent()).includes('Fall 2026'));
     assert.ok((await page.locator('#match-body').textContent()).includes('Visitors'));
     await page.locator('#match-body details summary').click();

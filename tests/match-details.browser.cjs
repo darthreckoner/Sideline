@@ -36,7 +36,6 @@ const server = http.createServer((req, res) => {
     });
     await page.reload(); await ready();
     await page.locator('#tab-team').click(); await page.locator('#team-lineup-tab').click();
-    await page.locator('.team-management > summary').click();
     await page.locator('#set-default-lineup').click();
     await page.locator('#tab-board').click(); await page.locator('#menu').click(); await page.locator('#board-default').click();
     await page.locator('#tab-match').click();

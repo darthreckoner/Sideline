@@ -45,3 +45,17 @@ test('invalid substitutions and finished match actions cannot change the ledger'
   assert.throws(() => M.substitute(m, 0, 'c', 4000)); assert.throws(() => M.goal(m, 'a', 4000)); assert.throws(() => M.toggle(m, 4000));
   assert.deepEqual(m, before);
 });
+
+test('position swaps preserve membership, running time and substitution history', () => {
+  const m = make(); M.toggle(m, 1000);
+  const before = structuredClone(m);
+  M.swapPositions(m, 0, 1);
+  assert.deepEqual(m.slots, ['b', 'a']);
+  assert.deepEqual({...m, slots: before.slots}, before);
+  assert.deepEqual(M.times(m, 61000), {a:60000,b:60000,c:0});
+  const restored = JSON.parse(JSON.stringify(m));
+  assert.deepEqual(restored.slots, ['b','a']);
+  for (const pair of [[0,0],[-1,1],[0,2],[0,0.5]]) assert.throws(() => M.swapPositions(m, ...pair));
+  M.endHalf(m, 61000); M.secondHalf(m, 62000); M.endHalf(m, 63000);
+  assert.throws(() => M.swapPositions(m, 0, 1));
+});

@@ -22,6 +22,13 @@ window.SIDELINE_RELEASES = [
   {
     version: "0.6.0",
     changes: [
+      "Quick board setup is now available from the Board header, with no roster needed.",
+      "Opening your default board shows opponent position labels instead of inherited number labels.",
+      "Game & season stats is directly available beside the team picker. Saved lineups sit with Lineup, availability with Roster, and board defaults have their own section. Team settings and files are visible without nested menus, with Delete team beside the team selector.",
+      "Team setup uses one full-width card with Roster above Lineup. The roster uses two columns on wider screens to reduce scrolling.",
+      "Quick board setup and Match setup share a vivid color palette with primary and secondary colors, white and black. Match setup offers swatches plus a custom color picker; saved team choices use the same palette.",
+      "Save home and away colors in Team settings. Match setup lets you choose Home or Away, uses the matching kit color and allows overrides for your team and opponent. Pitch and scoreboard retain the match colors.",
+      "Match fits the available screen with a compact header and no repeated instructions. A full-width Match header shows the fixture on the left, team names and colors around a broadcast-style score and clock in the middle, and game controls on the right. Tap two on-field players to swap positions without affecting playing time, or tap the selected player again to cancel.",
       "Match status stays visible while scrolling. Details keeps even long player names visible beside scrolling stats and uses consistent match-phase labels. Player choices refresh after roster edits between matches. Selected player names, swap confirmation and keyboard selection make substitutions clearer; Cancel clears the highlight.",
       "Board is the landing screen. Board, Team, Match and Coaching stay available in the bottom navigation.",
       "Match has its own pitch, clock, score and substitutes, separate from Board teaching tools. Prepare its lineup in Team.",
