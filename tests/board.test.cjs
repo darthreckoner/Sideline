@@ -269,3 +269,21 @@ test("mouse right-click opens the same label editor without starting a drag", as
   assert.equal(a.get("player-title").textContent, "Home · LB");
   assert.deepEqual(a.state(), before);
 });
+
+
+test("Board menu changes My team labels and preserves individual opponent edits", async () => {
+  const a = await app();
+  a.run('board.players[0].display = "number"; board.players[0].n = 42; board.players.find(p=>p.team === "away").display = "number"');
+  const before = a.state();
+  a.get("board-label-number").onclick();
+  assert.ok(a.state().board.players.filter(p=>p.team === "home").every(p => p.display === "number"));
+  assert.deepEqual(a.state().board.players.filter(p=>p.team === "away"), before.board.players.filter(p=>p.team === "away"));
+  assert.equal(a.state().board.players[0].n, 42);
+  a.get("undo").onclick();
+  assert.deepEqual(a.state(), before);
+  a.get("redo").onclick();
+  a.get("board-label-position").onclick();
+  assert.ok(a.state().board.players.filter(p=>p.team === "home").every(p => p.display === "position"));
+  assert.deepEqual(a.state().board.players.filter(p=>p.team === "away"), before.board.players.filter(p=>p.team === "away"));
+  assert.deepEqual(a.state().board.players.map(p=>[p.n,p.position,p.x,p.y]), before.board.players.map(p=>[p.n,p.position,p.x,p.y]));
+});

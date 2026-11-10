@@ -259,6 +259,7 @@ async function loadPreset(format) {
 }
 
 async function setFormat(format) {
+  window.SIDELINE_WORKSPACE?.forgetPlay();
   preset = await loadPreset(format);
   board = makeBoard(preset);
   start = null;
@@ -326,7 +327,7 @@ function fieldView() {
 function geometry() {
   const w = canvas.clientWidth;
   const h = canvas.clientHeight;
-  const rot = h > w * 1.05;
+  const rot = window.innerHeight > window.innerWidth;
   const view = fieldView();
   const fw = rot ? view.height : view.width;
   const fh = rot ? view.width : view.height;
@@ -442,6 +443,9 @@ function contents(c, { rot = false, live = false } = {}) {
     const fill = board.colors[p.team], style = markerStyle(p);
     const dark = isDark(fill);
     c.save(); c.globalAlpha = style.alpha;
+    if (live && window.SIDELINE_MATCH_UI?.selectedRoster === p.rosterId && p.rosterId) {
+      c.beginPath(); c.arc(p.x, p.y, style.radius + 13, 0, Math.PI * 2); c.lineWidth = 6; c.strokeStyle = "#ffcb54"; c.stroke();
+    }
     if (style.highlight) {
       c.beginPath(); c.arc(p.x, p.y, style.radius + 5, 0, Math.PI * 2);
       c.lineWidth = 3; c.strokeStyle = "#f4ffdded"; c.stroke();
@@ -505,7 +509,7 @@ function draw() {
 
   if (start) {
     // On-screen only; never part of the exported PNG.
-    const txt = "● START SET";
+    const txt = "● POSITION SET";
     ctx.font = "700 11px system-ui, -apple-system, sans-serif";
     const tw = ctx.measureText(txt).width;
     const x = g.ox + 8, y = g.oy + g.h - 2 * g.oy - 30;
@@ -553,6 +557,9 @@ canvas.addEventListener("pointerdown", (e) => {
   if (mode === "move") {
     if (hitBall(p)) gesture.ball = true; // the ball wins over nearby players
     else gesture.target = hitPlayer(p);
+    if (!gesture.ball && !gesture.target && window.innerHeight > window.innerWidth && window.innerHeight <= 700 && e.pointerType !== "mouse") {
+      gesture.scrollStart = document.getElementById("board-view").scrollTop;
+    }
     if (gesture.target) {
       const held = gesture;
       held.holdTimer = setTimeout(() => {
@@ -573,6 +580,11 @@ canvas.addEventListener("pointerdown", (e) => {
 
 canvas.addEventListener("pointermove", (e) => {
   if (!gesture || gesture.pointer !== e.pointerId) return;
+  if (gesture.scrollStart != null) {
+    if (Math.abs(e.clientY - gesture.cy) > DRAG_THRESHOLD) gesture.moved = true;
+    if (gesture.moved) document.getElementById("board-view").scrollTop = gesture.scrollStart + gesture.cy - e.clientY;
+    return;
+  }
   const p = at(e);
   if (!gesture.moved && Math.hypot(e.clientX - gesture.cx, e.clientY - gesture.cy) > DRAG_THRESHOLD) {
     gesture.moved = true;
@@ -666,6 +678,7 @@ function handleTap(g) {
     return;
   }
   const player = g.target;
+  if (player && window.SIDELINE_MATCH_UI?.tap(player)) return;
   if (ballSelected) {
     ballSelected = false;
     if (player) giveBall(player, `${TEAM[player.team]} ${playerName(player)} has the ball.`);
@@ -729,10 +742,20 @@ function positionPlayerMenu() {
   const left = viewport?.offsetLeft || 0, top = viewport?.offsetTop || 0;
   const width = viewport?.width || window.innerWidth;
   const height = viewport?.height || window.innerHeight;
-  dialog.style.maxHeight = `${Math.max(120, height - 24)}px`;
+  dialog.classList.toggle("compact", width >= 480 && height < 320);
+  dialog.style.maxHeight = `${Math.max(0, height - 24)}px`;
+  dialog.style.maxWidth = `${Math.max(0, width - 24)}px`;
   const rect = dialog.getBoundingClientRect();
   dialog.style.left = `${clamp(playerMenuAnchor.x + 12, left + 12, Math.max(left + 12, left + width - rect.width - 12))}px`;
   dialog.style.top = `${clamp(playerMenuAnchor.y + 12, top + 12, Math.max(top + 12, top + height - rect.height - 12))}px`;
+  // Resizing a dialog doesn't keep its focused input in its own scroll area.
+  // Safari can also pan the visual viewport while the keyboard animates.
+  const focused = document.activeElement;
+  if (focused && dialog.contains(focused)) {
+    const field = focused.getBoundingClientRect(), bounds = dialog.getBoundingClientRect();
+    if (field.bottom > bounds.bottom - 12) dialog.scrollTop += field.bottom - bounds.bottom + 12;
+    else if (field.top < bounds.top + 12) dialog.scrollTop -= bounds.top + 12 - field.top;
+  }
 }
 
 function setLabelMode(next) {
@@ -831,7 +854,7 @@ $("capture").onclick = () => {
   setMode("move");
   updateButtons();
   draw();
-  note("Start set. Run the play, then tap Reset.");
+  note("Position set. Run the play, then tap Reset.");
 };
 
 $("reset-start").onclick = () => {
@@ -859,6 +882,12 @@ for (const data of Object.values(window.SIDELINE_PRESETS)) {
 
 function syncMenu() {
   if (!board) return;
+  for (const display of ["position", "number"]) {
+    const selected = board.players.filter((p) => p.team === teachingTeam()).every((p) => p.display === (display === "position" && p.position ? "position" : "number"));
+    const button = $(display === "position" ? "board-label-position" : "board-label-number");
+    button.classList.toggle("on", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  }
   syncShapeControls();
   canvas.setAttribute("aria-label", board.activity ? `${board.activity.title} activity illustration` : `Interactive ${preset.name} coaching board`);
   document.querySelectorAll("[data-format]").forEach((b) => {
@@ -885,6 +914,7 @@ function syncMenu() {
 }
 
 function resetFormation(formation, message = `${formation} formation ready. Undo restores your previous board.`) {
+  window.SIDELINE_WORKSPACE?.forgetPlay();
   checkpoint();
   const previous = board, colors = { ...board.colors };
   board = makeBoard(preset, formation);
@@ -906,6 +936,7 @@ $("default-field").onclick = () => {
 };
 
 function applyFormation(side, formation) {
+  window.SIDELINE_WORKSPACE?.forgetPlay();
   if (board.activity) return resetFormation(formation);
   checkpoint();
   const other = side === "home" ? "away" : "home";
@@ -925,7 +956,7 @@ function applyFormation(side, formation) {
   board.formation = board.formations.home;
   refreshShapeLines(board);
   start = null; anim = null; setMode("move"); syncMenu(); updateButtons(); draw();
-  note(`${TEAM[side]} ${formation} ready. Set start for a new demonstration.`);
+  note(`${TEAM[side]} ${formation} ready. Set position for a new demonstration.`);
 }
 
 $("formation").onchange = () => {
@@ -977,6 +1008,20 @@ document.querySelectorAll("[data-format]").forEach((btn) =>
     $("menuDialog").close();
     note(`${preset.name} ready.`);
   }));
+
+// Apply the label choice to My team as one undoable edit; leave opponents editable.
+for (const display of ["position", "number"]) {
+  $(display === "position" ? "board-label-position" : "board-label-number").onclick = () => {
+    cancelGesture();
+    const next = (p) => p.team !== teachingTeam() ? p.display : display === "position" && p.position ? "position" : "number";
+    if (board.players.some((p) => p.display !== next(p))) {
+      checkpoint();
+      board.players.forEach((p) => { p.display = next(p); });
+      draw();
+    }
+    syncMenu();
+  };
+}
 
 $("menu").onclick = () => { cancelGesture(); syncMenu(); $("menuDialog").showModal(); };
 $("help").onclick = () => { $("menuDialog").close(); $("helpDialog").showModal(); };
@@ -1071,13 +1116,14 @@ function openActivity(activity) {
 
 function applyLineup(team, side) {
   const data = window.SIDELINE_DATA;
+  window.SIDELINE_WORKSPACE?.forgetPlay();
   const lineup = data.lineup(team, window.SIDELINE_PRESETS), target = window.SIDELINE_PRESETS[team.format];
   const fresh = board.format !== team.format || !!board.activity;
   const next = fresh ? makeBoard(target) : clone(board);
   if (fresh) transferShapeSettings(board, next);
   const oldCarrier = carrierOf(), previousBall = restingBall();
   const markerSide = makeBoard(target, team.formation).players.filter((p) => p.team === side);
-  const selected = markerSide.flatMap((p, i) => lineup.players[i] ? [{ ...p, n: lineup.players[i].number, name: lineup.players[i].name, rosterId: lineup.players[i].id, sourceTeamId: team.id }] : []);
+  const selected = markerSide.flatMap((p, i) => lineup.players[i] ? [{ ...p, n: lineup.players[i].number, name: lineup.players[i].name, rosterId: lineup.players[i].id, sourceTeamId: team.id, lineupSlot: i }] : []);
   next.players = [...next.players.filter((p) => p.team !== side), ...selected];
   next.teamNames = { ...next.teamNames, [side]: team.name };
   next.colors[side] = team.color;
@@ -1092,7 +1138,7 @@ function applyLineup(team, side) {
     const same = selected.find((p) => oldCarrier.rosterId && p.rosterId === oldCarrier.rosterId);
     next.ball = { ...previousBall, carrier: same?.id || null };
   }
-  installSnapshot({ board: next, start: null }, `${team.name} applied. Tap Set start for a new demonstration.`);
+  installSnapshot({ board: next, start: null }, `${team.name} applied. Tap Set position for a new demonstration.`);
 }
 
 function updateBoardOptions(values) {
@@ -1134,17 +1180,35 @@ $("show-lines").onclick = () => {
 $("lines-defense").onclick = () => selectShapeLines(true, "defense");
 $("lines-offense").onclick = () => selectShapeLines(true, "offense");
 
-function previewBoard(targetCanvas, value) {
+function previewBoard(targetCanvas, value, matchView = false) {
   const previous = { board, preset, anim };
   try {
     board = value; preset = window.SIDELINE_PRESETS[value.format]; anim = null;
     const c = targetCanvas.getContext("2d");
     c.save(); c.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
-    c.scale(targetCanvas.width / P.w, targetCanvas.height / P.h); contents(c); c.restore();
+    if (matchView) {
+      const rot = targetCanvas.height > targetCanvas.width;
+      const fw = rot ? P.h : P.w, fh = rot ? P.w : P.h;
+      const scale = Math.min(targetCanvas.width / fw, targetCanvas.height / fh);
+      c.translate((targetCanvas.width - fw * scale) / 2, (targetCanvas.height - fh * scale) / 2);
+      c.scale(scale, scale);
+      if (rot) { c.translate(0, P.w); c.rotate(-Math.PI / 2); }
+      contents(c, {rot, live:true});
+    } else { c.scale(targetCanvas.width / P.w, targetCanvas.height / P.h); contents(c); }
+    c.restore();
   } finally { board = previous.board; preset = previous.preset; anim = previous.anim; }
 }
 
-window.SIDELINE_BOARD = { snapshot, install: installSnapshot, openActivity, applyLineup, options: updateBoardOptions, preview: previewBoard, redraw: resize, cancel: cancelGesture, make: makeBoard, imageFile,
+function matchPlayers(side, slots, roster) {
+  // Match membership belongs to the match ledger, including after tactical Undo/Reset.
+  const markers = board.players.filter((p) => p.team === side);
+  for (let i = 0; i < markers.length; i++) {
+    const person = roster.find((p) => p.id === slots[i]);
+    if (person) Object.assign(markers[i], { rosterId: person.id, name: person.name, n: person.number, display: "number" });
+  }
+  draw();
+}
+window.SIDELINE_BOARD = { move() { cancelGesture(); setMode("move"); }, matchPlayers, snapshot, install: installSnapshot, openActivity, applyLineup, options: updateBoardOptions, preview: previewBoard, redraw: resize, cancel: cancelGesture, make: makeBoard, imageFile,
   arrow(kind) { arrowKind = kind; $("arrow-pass").classList.toggle("on", kind === "pass"); $("arrow-run").classList.toggle("on", kind === "run"); $("arrow-pass").setAttribute("aria-pressed", String(kind === "pass")); $("arrow-run").setAttribute("aria-pressed", String(kind === "run")); },
 };
 $("arrow-pass").onclick = () => window.SIDELINE_BOARD.arrow("pass");

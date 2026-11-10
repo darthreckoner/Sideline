@@ -12,7 +12,7 @@
   };
   let activeTab = "board", collection = "situations", teams = [], selectedTeam = null;
   let ready = false, draftTimer, teamTimer, noticeTimer, draftSerial = "", writingDraft = Promise.resolve();
-  let pendingName = null, editingPlayer = null, playbookRevision = 0;
+  let pendingName = null, editingPlayer = null, playbookRevision = 0, openedPlay = null, defaultLineup = null;
 
   function notice(text) {
     el("app-notice").textContent = text; el("app-notice").hidden = false;
@@ -46,17 +46,18 @@
   document.querySelectorAll("[data-close]").forEach((button) => button.onclick = () => el(button.dataset.close).close());
 
   function switchTab(tab, moveFocus = true) {
-    if (!["board", "coaching", "team"].includes(tab)) return;
+    if (!["board", "team", "match", "coaching"].includes(tab)) return;
     B.cancel();
     if (el("menuDialog").open) el("menuDialog").close();
     activeTab = tab;
     if (location.hash !== `#${tab}`) history.replaceState(null, "", `#${tab}`);
-    for (const name of ["board", "coaching", "team"]) {
+    for (const name of ["board", "team", "match", "coaching"]) {
       el(`${name}-view`).hidden = name !== tab;
       el(`tab-${name}`).setAttribute("aria-selected", String(name === tab));
       el(`tab-${name}`).tabIndex = name === tab ? 0 : -1;
     }
     if (tab === "board") B.redraw();
+    if (tab === "match") window.SIDELINE_MATCH_UI?.refresh();
     if (tab === "coaching") { syncAids(); if (collection === "playbook") renderPlaybook(); }
     if (moveFocus) {
       if (tab === "board") el("tab-board").focus();
@@ -66,12 +67,12 @@
   document.querySelectorAll("[data-tab]").forEach((button, index, buttons) => {
     button.onclick = () => switchTab(button.dataset.tab);
     button.onkeydown = (event) => {
-      const next = event.key === "ArrowRight" ? (index + 1) % 3 : event.key === "ArrowLeft" ? (index + 2) % 3 : event.key === "Home" ? 0 : event.key === "End" ? 2 : null;
+      const next = event.key === "ArrowRight" ? (index + 1) % 4 : event.key === "ArrowLeft" ? (index + 3) % 4 : event.key === "Home" ? 0 : event.key === "End" ? 3 : null;
       if (next != null) { event.preventDefault(); switchTab(buttons[next].dataset.tab, false); buttons[next].focus(); }
     };
   });
   document.querySelectorAll("[data-open-tab]").forEach((button) => button.onclick = () => switchTab(button.dataset.openTab));
-  addEventListener("hashchange", () => { const tab = location.hash.slice(1); if (tab !== activeTab) switchTab(["board", "coaching", "team"].includes(tab) ? tab : "board"); });
+  addEventListener("hashchange", () => { const tab = location.hash.slice(1); if (tab !== activeTab) switchTab(["board", "team", "match", "coaching"].includes(tab) ? tab : "board"); });
 
   function updateCue() {
     const state = B.snapshot().board, activity = situations.find((s) => s.id === state.activity?.id);
@@ -84,6 +85,7 @@
   }
   function boardChanged() {
     if (!ready) return;
+    window.SIDELINE_MATCH_UI?.changed();
     updateCue();
     const serial = JSON.stringify(B.snapshot());
     if (serial === draftSerial) return;
@@ -136,7 +138,7 @@
       const card = create("article", "situation-card"), image = create("canvas"); image.width = 1000; image.height = 620; image.setAttribute("aria-label", `${activity.title} schematic preview`);
       card.append(create("p", "meta", `${activity.ages} · ${activity.size}`), create("h2", "", activity.title), image, create("p", "", activity.cue), create("p", "question", activity.question));
       const actions = create("div", "button-row"), open = create("button", "accent", "Open on board"), source = create("button", "", "How to play & source");
-      open.onclick = () => { B.openActivity(activity); el("active-lesson").open = false; switchTab("board"); };
+      open.onclick = () => { openedPlay = null; B.openActivity(activity); el("active-lesson").open = false; switchTab("board"); };
       source.onclick = () => showSource(activity);
       actions.append(open, source); card.append(actions); root.append(card); B.preview(image, activitySnapshot(activity));
     }
@@ -170,11 +172,20 @@
   el("show-situations").onclick = () => setCollection("situations"); el("show-playbook").onclick = () => setCollection("playbook");
   function openPlaybook() { setCollection("playbook"); switchTab("coaching"); }
   async function saveRecord(record) { await Store.run("boards", "put", record); notice("Board saved on this device."); if (collection === "playbook") await renderPlaybook(); }
-  function saveBoard() {
+  async function saveBoard() {
     try {
       const snapshot = D.readSnapshot(B.snapshot(), presets);
       if (snapshot.board.activity) snapshot.board.activity.edited = true;
-      chooseName("Save board to playbook", snapshot.board.activity?.title || "", (name) => saveRecord({ slot: D.id(), name, board: snapshot.board, start: snapshot.start, updated: Date.now() }));
+      if (openedPlay) {
+        if (await confirmChange('Overwrite existing play?', 'Overwrite')) {
+          const existing = await Store.run("boards", "get", openedPlay);
+          if (!existing) { openedPlay = null; throw Error("This play was deleted. Save it as a new play."); }
+          await saveRecord({ ...existing, board: snapshot.board, start: snapshot.start || D.copy(snapshot.board), updated: Date.now() });
+          notice("Play updated");
+        }
+        return;
+      }
+      chooseName("Save board to playbook", snapshot.board.activity?.title || "", async (name) => { const slot = D.id(); await saveRecord({ slot, name, board: snapshot.board, start: snapshot.start || D.copy(snapshot.board), updated: Date.now() }); openedPlay = slot; });
     } catch (error) { notice(error.message); }
   }
   async function renderPlaybook() {
@@ -190,7 +201,7 @@
         const description = create("div", "description"), actions = create("div", "actions");
         description.append(create("strong", "", record.name), create("small", "", `${record.board.activity?.title || record.board.format} · ${new Date(record.updated).toLocaleDateString()}`));
         const action = (label, handler) => { const button = create("button", "", label); button.onclick = async () => { try { await handler(); } catch (error) { failure(error); } }; actions.append(button); };
-        action("Open", () => { B.install(D.readSnapshot(record, presets)); switchTab("board"); });
+        action("Open", () => { const value = D.readSnapshot(record, presets); value.start ||= D.copy(value.board); B.install(value); openedPlay = record.slot; switchTab("board"); });
         action(record.favorite ? "★" : "☆", () => saveRecord({ ...record, favorite: !record.favorite }));
         action("Rename", () => chooseName("Rename board", record.name, (name) => saveRecord({ ...record, name, updated: Date.now() })));
         action("Copy", () => saveRecord({ ...D.copy(record), slot: D.id(), name: `${record.name} copy`.slice(0, 80), updated: Date.now() }));
@@ -226,7 +237,7 @@
       const doc = D.readFile(await file.text(), presets);
       const description = doc.kind === "sideline-board" ? `Open "${doc.name}"? Tap Undo to bring back your current board.` : doc.kind === "sideline-team" ? `Import "${doc.team.name}" as a new team? Your board won't change.` : `Import ${doc.boards.length} boards as copies in your playbook?`;
       if (!(await confirmChange(description, "Import"))) return;
-      if (doc.kind === "sideline-board") { B.install(doc.snapshot); switchTab("board"); }
+      if (doc.kind === "sideline-board") { openedPlay = null; B.install(doc.snapshot); switchTab("board"); }
       else if (doc.kind === "sideline-team") {
         const team = D.copyTeam(doc.team, presets);
         const nextTeams = [...teams, team]; clearTimeout(teamTimer); teamTimer = null;
@@ -348,16 +359,30 @@
       const message = `Apply ${team.name} to ${side === "home" ? "Home" : "Away"}? ${team.format}, ${team.formation}, ${plan.players.filter(Boolean).length} starting and ${plan.bench.length} on the bench. ${warning} Your saved starting point will be cleared. Tap Undo to bring back your previous board.`;
       if (!(await confirmChange(message, "Apply to board"))) return;
       try { await persistTeams(); } catch { /* Keep the unsaved team in memory; applying is still useful. */ }
-      B.applyLineup(team, side); switchTab("board");
+      openedPlay = null; B.applyLineup(team, side); switchTab("board");
     } catch (error) { el("lineup-error").textContent = error.message; }
   };
   el("export-team").onclick = () => { try { exportJSON({ kind: "sideline-team", version: 1, team: D.readTeam(currentTeam(), presets) }, "sideline-team.json").catch(failure); } catch (error) { notice(error.message); } };
 
-  window.SIDELINE_WORKSPACE = { boardChanged, saveBoard, openPlaybook, confirm: confirmChange, switchTab, notice, flush: () => Promise.all([persistDraft(), persistTeams()]) };
+  async function openDefault() {
+    try {
+      if (defaultLineup) B.applyLineup(defaultLineup, "home");
+      else B.install({ board: B.make(presets[B.snapshot().board.format]), start: null });
+      openedPlay = null; switchTab("board");
+    } catch (error) { notice(error.message); }
+  }
+  el("board-default").onclick = openDefault;
+  el("set-default-lineup").onclick = async () => {
+    try { const team = D.copy(currentTeam()); D.lineup(team, presets); await Store.run("workspace", "put", { key: "default-lineup", team }); defaultLineup = team; el("default-lineup-status").textContent = `${team.name}'s starting lineup is the default board.`; notice("Default lineup saved."); } catch (error) { failure(error); }
+  };
+  el("clear-default-lineup").onclick = async () => { try { await Store.run("workspace", "delete", "default-lineup"); defaultLineup = null; el("default-lineup-status").textContent = "Default board uses the standard formation."; notice("Default lineup cleared."); } catch (error) { failure(error); } };
+  window.SIDELINE_WORKSPACE = { get ready() { return ready; }, forgetPlay() { openedPlay = null; }, currentTeam, teams: () => D.copy(teams), boardChanged, saveBoard, openPlaybook, confirm: confirmChange, switchTab, notice, flush: () => Promise.all([persistDraft(), persistTeams()]) };
   (async function boot() {
     await window.SIDELINE_READY;
     try {
-      const [savedDraft, savedTeams] = await Promise.all([Store.run("workspace", "get", "current"), Store.run("workspace", "get", "teams")]);
+      const [savedDraft, savedTeams, savedDefault] = await Promise.all([Store.run("workspace", "get", "current"), Store.run("workspace", "get", "teams"), Store.run("workspace", "get", "default-lineup")]);
+      if (savedDefault) defaultLineup = D.readTeam(savedDefault.team, presets);
+      if (!savedDraft && defaultLineup) B.applyLineup(defaultLineup, "home");
       if (savedDraft) B.install(D.readSnapshot(savedDraft.snapshot, presets), "Recovered your last board draft.", false);
       if (savedTeams) { teams = savedTeams.teams.map((team) => D.readTeam(team, presets)); selectedTeam = savedTeams.selectedTeam; }
       storageStatus("Saved on this device");
@@ -365,8 +390,10 @@
     if (!teams.length) teams = [D.newTeam(presets)];
     if (!teams.some((t) => t.id === selectedTeam)) selectedTeam = teams[0].id;
     renderTeam(); renderSituations(); updateCue();
+    el("default-lineup-status").textContent = defaultLineup ? `${defaultLineup.name} is the default board.` : "Default board uses the standard formation.";
     ready = true; draftSerial = JSON.stringify(B.snapshot());
-    const requested = location.hash.slice(1); switchTab(["board", "coaching", "team"].includes(requested) ? requested : "board", false);
+    const requested = location.hash.slice(1); switchTab(["board", "team", "match", "coaching"].includes(requested) ? requested : "board", false);
     window.SIDELINE_RELEASE_NOTES.start();
+    dispatchEvent(new Event("sideline-workspace-ready"));
   })().catch((error) => { console.error(error); notice("A workspace could not open. Your existing local saves have not been removed."); });
 })();

@@ -17,6 +17,7 @@
 <div id="app">
 <section id="board-view" class="board-workspace" role="tabpanel" aria-labelledby="tab-board">
   <div class="board-content">
+    <div class="board-toolbar">
     <div class="shape-controls" aria-label="Team and line controls">
       <label class="shape-team"><span>My team</span><select id="board-teaching-team" aria-label="My team"><option value="home">Home</option><option value="away">Away</option></select></label>
       <button type="button" id="show-lines" aria-pressed="false">Show lines</button>
@@ -25,28 +26,44 @@
         <button type="button" id="lines-offense" aria-pressed="false">Offense</button>
       </div>
     </div>
+
+    </div>
+  <p class="board-scroll-hint">Move: drag players or swipe empty field to scroll</p>
+  <div class="pitch-with-bench">
   <main class="board-frame">
     <canvas id="board" aria-label="Interactive soccer tactics field"></canvas>
     <div id="message" class="toast" role="status" aria-live="polite"></div>
     <div id="arrow-style" class="floating-tools" hidden aria-label="Arrow style"><button id="arrow-pass" class="on" aria-pressed="true">→ Pass</button><button id="arrow-run" aria-pressed="false">⇢ Run</button></div>
     <div id="activity-controls" class="lesson-cue" hidden><div class="lesson-controls"><details id="active-lesson"><summary id="active-lesson-title"></summary><p id="active-lesson-cue"></p><p id="active-lesson-question"></p><button id="active-lesson-source">How to play &amp; source</button></details><button type="button" id="default-field" class="accent" title="Start a fresh field in the current format. Undo brings the activity back.">Default field</button></div></div>
-  </main>
+  </main></div>
   </div>
 
   <nav class="rail" aria-label="Board controls">
-    <button data-mode="move" class="active"><i>✥</i><span>Move</span></button>
-    <button data-mode="arrow"><i>➜</i><span>Arrow</span></button>
-    <button data-mode="pen"><i>✎</i><span>Draw</span></button>
-    <button data-mode="erase"><i>⌫</i><span>Erase</span></button>
-    <button id="undo"><i>↶</i><span>Undo</span></button>
-    <button id="redo"><i>↷</i><span>Redo</span></button>
-    <button id="capture" title="Demonstrate: save this setup and start moving players"><i>◎</i><span>Set start</span></button>
-    <button id="reset-start" title="Return to your saved start or the default positions"><i>⟲</i><span>Reset</span></button>
-    <button id="clear"><i>✕</i><span>Clear ink</span></button>
-    <button id="save"><i>★</i><span>Save</span></button>
-    <button id="share" class="primary"><i>⇪</i><span>Share</span></button>
-    <button id="menu"><i>☰</i><span>Menu</span></button>
+    <button data-mode="move" class="active"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18M8 7l4-4 4 4M7 8l-4 4 4 4M8 17l4 4 4-4M17 8l4 4-4 4"/></svg></i><span>Move</span></button>
+    <button data-mode="arrow"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20L20 4M8 4h12v12"/></svg></i><span>Arrow</span></button>
+    <button data-mode="pen"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1L20 7l-3-3L5 16z"/></svg></i><span>Draw</span></button>
+    <button data-mode="erase"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15l8-11 8 7-8 10H9zM12 21h9"/></svg></i><span>Erase</span></button>
+    <button id="undo"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5L4 10l5 5M4 10h10a6 6 0 0 1 6 6"/></svg></i><span>Undo</span></button>
+    <button id="redo"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l5 5-5 5M20 10H10a6 6 0 0 0-6 6"/></svg></i><span>Redo</span></button>
+    <button id="capture" title="Demonstrate: save this setup and start moving players"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14v14H5zM9 12h6M12 9v6"/></svg></i><span>Set position</span></button>
+    <button id="reset-start" title="Return to your saved start or the default positions"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8a8 8 0 1 1-1 8M5 3v5h5"/></svg></i><span>Reset</span></button>
+    <button id="clear"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M6 18L18 6"/></svg></i><span>Clear ink</span></button>
+    <button id="save"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h14v18l-7-4-7 4z"/></svg></i><span>Save</span></button>
+    <button id="share" class="primary"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V3M7 8l5-5 5 5M4 13v8h16v-8"/></svg></i><span>Share</span></button>
+    <button id="menu"><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></i><span>Menu</span></button>
   </nav>
+</section>
+
+<section id="match-view" class="workspace" role="tabpanel" aria-labelledby="tab-match" hidden>
+  <header class="page-heading"><div><p class="eyebrow">SIDELINE</p><h1 tabindex="-1">Match</h1><p id="match-context">Prepare a lineup in Team, then set up your match.</p></div></header>
+  <div id="match-strip" class="match-strip">
+    <div class="match-status"><span id="match-phase">Match setup</span><span id="match-clock" role="timer"></span><span id="match-stoppage"></span><span id="match-score" aria-label="Score"></span></div>
+    <div class="match-actions"><button id="open-match">Match setup</button><button id="match-toggle" hidden>Begin first half</button><button id="match-goal" hidden>Goal</button><button id="match-end" hidden>End of half</button><button id="match-details" hidden>Details</button></div>
+    <p id="match-selection" role="status" aria-live="polite"></p>
+  </div>
+  <div id="match-prereq" class="panel"><p id="match-prereq-text"></p><button data-open-tab="team">Open Team</button></div>
+  <div class="match-layout"><div class="match-pitch"><canvas id="match-pitch" aria-label="Match lineup: tap a player to substitute"></canvas></div><aside id="sideline" aria-label="Substitutes" hidden><strong>Subs</strong><p id="sub-hint" aria-live="polite">Tap a player, then a sub</p><div id="sideline-players"></div><button id="cancel-sub" hidden>Cancel</button><details id="field-player-picker"><summary>Select an on-field player</summary><div id="match-field-players"></div></details></aside></div>
+  <p class="quiet">Tap a player and a substitute to swap them. Match time continues when you switch tabs.</p>
 </section>
 
 <section id="coaching-view" class="workspace" role="tabpanel" aria-labelledby="tab-coaching" hidden>
@@ -58,7 +75,7 @@
   </details>
   <div id="situations-panel">
     <div class="filter-row"><label>Ages in the lesson<select id="age-filter"><option value="all">All ages</option><option value="8-12">Ages 8–12</option><option value="u10">U-10</option></select></label><label>Topic<select id="topic-filter"><option value="all">All topics</option><option>Passing</option><option>Space</option><option>Decisions</option></select></label></div>
-    <p class="section-caption" id="situation-count"></p><p class="quiet">Pick an idea to show your players. Each board is based on a FIFA youth activity and keeps the activity's original group size, even if your team plays 7v7 or 9v9.</p>
+    <p class="section-caption" id="situation-count"></p><p class="quiet">FIFA youth activities. Boards keep each lesson&#39;s original group size.</p>
     <div id="situation-list" class="situation-grid"></div><p id="situation-empty" class="empty-state" hidden>No situations match these filters.</p>
   </div>
   <div id="playbook-panel" hidden><div class="filter-row"><label class="grow">Find a saved board<input id="playbook-search" type="search" placeholder="Name or activity"></label><button id="export-playbook">Export playbook</button><button class="import-file">Import file</button></div><p class="quiet">Your playbook is saved on this device. Export it to keep a backup somewhere else.</p><div id="playbook-list"></div><p id="playbook-empty" class="empty-state" hidden>Save a board to start your playbook.</p></div>
@@ -66,6 +83,13 @@
 
 <section id="team-view" class="workspace" role="tabpanel" aria-labelledby="tab-team" hidden>
   <header class="page-heading"><div><p class="eyebrow">SIDELINE</p><h1 tabindex="-1">Team setup</h1><p>Prepare the lineup, then apply it to Board.</p></div><span class="device-status" id="team-status" role="status"></span></header>
+  <div class="team-picker"><label class="grow">Your teams<select id="team-picker"></select></label><button id="new-team">New team</button></div>
+  <div class="subnav team-subnav"><button id="team-roster-tab" class="on" aria-pressed="true">Roster</button><button id="team-lineup-tab" aria-pressed="false">Lineup</button></div>
+  <div class="team-columns"><section id="roster-panel" class="panel"><div class="section-heading"><h2>Roster <small id="roster-count"></small></h2><button id="add-player" class="accent">+ Add player</button></div><p class="quiet">Check the players available for this lineup. Anyone you leave unchecked stays on your roster.</p><div id="roster-list"></div><p id="roster-empty" class="empty-state">Add your players to prepare a lineup.</p></section>
+    <section id="lineup-panel" class="panel"><div class="section-heading"><h2>Lineup</h2><span id="lineup-count" class="quiet"></span></div><canvas id="lineup-preview" width="1000" height="620" aria-label="Planned lineup preview"></canvas><div id="lineup-slots" class="lineup-slots"></div><h3>Bench</h3><div id="bench-list" class="bench-list"></div><label class="check-label"><input id="short-handed" type="checkbox"> Apply with empty positions (short-handed)</label><div class="button-row"><label>Apply to<select id="apply-side"><option value="home">Home</option><option value="away">Away</option></select></label><button id="apply-lineup" class="accent grow">Apply to board</button></div><p id="lineup-error" class="form-error" role="alert"></p><p class="quiet">Check your lineup above, then tap Apply to board when you're ready. To demonstrate a play, tap Set position on the board afterward.</p></section></div>
+  <details class="panel team-management"><summary>Lineup options &amp; team settings<span>Saved lineups, default board, stats and files</span></summary>  <details id="team-settings" class="panel"><summary>Team settings <span>Name, format, color and team files</span></summary><div class="settings-grid"><label>Team name<input id="team-name" maxlength="48" placeholder="Team name"></label><label>Format<select id="team-format"><option value="9v9">9v9</option><option value="7v7">7v7</option></select></label><label>Formation<select id="team-formation"></select></label><label>Team color<select id="team-color"></select></label></div><div class="button-row"><button id="copy-team">Duplicate team</button><button id="export-team">Export team</button><button class="import-file">Import file</button><button id="delete-team">Delete team</button></div></details>
+  <div class="button-row"><button id="set-default-lineup">Use starting lineup as default board</button><button id="clear-default-lineup">Clear default</button><button id="team-stats">Game &amp; season stats</button></div><p id="default-lineup-status" class="quiet"></p><div class="filter-row"><label class="grow">Saved lineups<select id="saved-lineups"></select></label><button id="save-lineup">Save lineup as…</button><button id="reset-availability">Everyone available</button></div>
+</details>
   <details class="panel quick-setup"><summary>Quick board setup <span>No roster needed</span></summary>
     <h3>Format</h3><div class="seg" id="formatSeg"></div>
     <label>Formation for<select id="setup-side"><option value="home">Home</option><option value="away">Away</option><option value="both">Both teams</option></select></label>
@@ -73,20 +97,19 @@
     <p id="formation-help" class="quiet">Choose a formation for Home, Away or both. Reset both teams clears your drawings and saved starting point. Tap Undo to bring the old board back.</p>
     <h3>Home color</h3><div class="swatches" id="sw-home"></div><h3>Away color</h3><div class="swatches" id="sw-away"></div><button class="wide" data-open-tab="board">Back to board</button>
   </details>
-  <div class="team-picker"><label class="grow">Your teams<select id="team-picker"></select></label><button id="new-team">New team</button></div>
-  <details id="team-settings" class="panel"><summary>Team settings <span>Name, format, color and team files</span></summary><div class="settings-grid"><label>Team name<input id="team-name" maxlength="48" placeholder="Team name"></label><label>Format<select id="team-format"><option value="9v9">9v9</option><option value="7v7">7v7</option></select></label><label>Formation<select id="team-formation"></select></label><label>Team color<select id="team-color"></select></label></div><div class="button-row"><button id="copy-team">Duplicate team</button><button id="export-team">Export team</button><button class="import-file">Import file</button><button id="delete-team">Delete team</button></div></details>
-  <div class="filter-row"><label class="grow">Saved lineups<select id="saved-lineups"></select></label><button id="save-lineup">Save lineup as…</button><button id="reset-availability">Everyone available</button></div>
-  <div class="subnav team-subnav"><button id="team-roster-tab" class="on" aria-pressed="true">Roster</button><button id="team-lineup-tab" aria-pressed="false">Lineup</button></div>
-  <div class="team-columns"><section id="roster-panel" class="panel"><div class="section-heading"><h2>Roster <small id="roster-count"></small></h2><button id="add-player" class="accent">+ Add player</button></div><p class="quiet">Check the players available for this lineup. Anyone you leave unchecked stays on your roster.</p><div id="roster-list"></div><p id="roster-empty" class="empty-state">Add your players to prepare a lineup.</p></section>
-    <section id="lineup-panel" class="panel"><div class="section-heading"><h2>Lineup</h2><span id="lineup-count" class="quiet"></span></div><canvas id="lineup-preview" width="1000" height="620" aria-label="Planned lineup preview"></canvas><div id="lineup-slots" class="lineup-slots"></div><h3>Bench</h3><div id="bench-list" class="bench-list"></div><label class="check-label"><input id="short-handed" type="checkbox"> Apply with empty positions (short-handed)</label><div class="button-row"><label>Apply to<select id="apply-side"><option value="home">Home</option><option value="away">Away</option></select></label><button id="apply-lineup" class="accent grow">Apply to board</button></div><p id="lineup-error" class="form-error" role="alert"></p><p class="quiet">Check your lineup above, then tap Apply to board when you're ready. To demonstrate a play, tap Set start on the board afterward.</p></section></div>
+
 </section>
 
-<nav class="app-tabs" role="tablist" aria-label="Sideline workspaces"><button id="tab-board" role="tab" aria-selected="true" aria-controls="board-view" data-tab="board"><span aria-hidden="true">▣</span>Board</button><button id="tab-coaching" role="tab" aria-selected="false" aria-controls="coaching-view" tabindex="-1" data-tab="coaching"><span aria-hidden="true">⚑</span>Coaching</button><button id="tab-team" role="tab" aria-selected="false" aria-controls="team-view" tabindex="-1" data-tab="team"><span aria-hidden="true">♟</span>Team</button></nav>
+<nav class="app-tabs" role="tablist" aria-label="Sideline workspaces">
+<button id="tab-board" role="tab" aria-selected="true" aria-controls="board-view" data-tab="board">Board</button>
+<button id="tab-team" role="tab" aria-selected="false" aria-controls="team-view" tabindex="-1" data-tab="team">Team</button>
+<button id="tab-match" role="tab" aria-selected="false" aria-controls="match-view" tabindex="-1" data-tab="match">Match</button>
+<button id="tab-coaching" role="tab" aria-selected="false" aria-controls="coaching-view" tabindex="-1" data-tab="coaching">Coaching</button></nav>
 </div>
 
 <dialog id="playerDialog" class="player-menu" aria-labelledby="player-title">
   <form id="player-form">
-    <div class="dialog-title"><h2 id="player-title">Player label</h2><button type="button" id="player-close" class="x" aria-label="Cancel player label edit">✕</button></div>
+    <div class="dialog-title"><h2 id="player-title">Player label</h2><button type="button" id="player-close" class="x" aria-label="Cancel player label edit">Close</button></div>
     <h3>Display</h3>
     <div class="seg" aria-label="Player label display">
       <button type="button" id="label-position" data-label-mode="position" aria-label="Show position">Pos</button>
@@ -107,8 +130,10 @@
 
 <dialog id="menuDialog">
   <form method="dialog">
-    <div class="dialog-title"><h2>Board</h2><button class="x" aria-label="Close">✕</button></div>
-    <div class="menu-actions">
+    <div class="dialog-title"><h2>Board</h2><button class="x" aria-label="Close">Close</button></div>
+    <h3 id="board-labels-title">My team labels</h3>
+    <div class="seg" role="group" aria-labelledby="board-labels-title"><button type="button" id="board-label-position" aria-pressed="false">Pos</button><button type="button" id="board-label-number" aria-pressed="false">#</button></div>
+    <div class="menu-actions"><button type="button" id="board-default">Default board</button>
       <button type="button" data-open-tab="team">Team and board setup</button>
       <button type="button" data-open-tab="coaching">Coaching situations</button>
       <button type="button" id="load">Saved boards</button>
@@ -126,7 +151,7 @@
 </dialog>
 
 <dialog id="releaseDialog" aria-labelledby="release-title">
-  <div class="dialog-title"><h2 id="release-title">What's new</h2><button type="button" id="release-close" class="x" aria-label="Close What's new">✕</button></div>
+  <div class="dialog-title"><h2 id="release-title">What's new</h2><button type="button" id="release-close" class="x" aria-label="Close What's new">Close</button></div>
   <div id="release-list"></div>
   <p id="release-storage-error" class="form-error" role="status" hidden></p>
   <button type="button" id="release-dismiss" class="accent wide">Got it</button>
@@ -134,7 +159,7 @@
 
 <dialog id="savesDialog">
   <form method="dialog">
-    <div class="dialog-title"><h2>Saved boards</h2><button class="x" aria-label="Close">✕</button></div>
+    <div class="dialog-title"><h2>Saved boards</h2><button class="x" aria-label="Close">Close</button></div>
     <p>Find your saved boards under Coaching → My playbook. Export an editable file if you want a backup on another device.</p>
     <div id="slots"></div>
   </form>
@@ -142,12 +167,12 @@
 
 <dialog id="helpDialog">
   <form method="dialog">
-    <div class="dialog-title"><h2>How it works</h2><button class="x" aria-label="Close">✕</button></div>
+    <div class="dialog-title"><h2>How it works</h2><button class="x" aria-label="Close">Close</button></div>
     <h3>Move and pass</h3>
     <p>Choose Move, then drag a player or the ball. To pass, tap a teammate of the player with the ball. To give the ball to anyone, tap the ball and then that player. Tap an empty spot to leave it loose.</p>
     <p>Players show their positions at first. In Move mode, hold a player, choose Pos for a position or # for a number, then tap Apply. On a computer, you can also right-click. Tap Undo if you want to change it back.</p>
     <h3>Show a play</h3>
-    <p>Tap Reset to return players and the ball to their default positions. To save your own starting point, put the players where you want them and tap Set start. Move them or pass the ball, then tap Reset to go back to your saved start. Undo brings back the play you just showed.</p>
+    <p>Tap Reset to return players and the ball to the selected play's saved position, or the formation positions on a fresh board. To save your own starting point, put the players where you want them and tap Set position. Move them or pass the ball, then tap Reset to go back to your saved start. Undo brings back the play you just showed.</p>
     <p>For arrows, choose Arrow, then pick Pass for a solid arrow or Run for a dashed one. Swipe across the field to place it. Choose Draw to sketch or Erase to remove a line.</p>
     <h3>Find an idea or set up your team</h3>
     <p>In Coaching, pick an activity. Tap How to play &amp; source for a short description and the original lesson, or Open on board to show it. On the board, tap the activity title to see its cue and source again. When you're done, tap Default field for a fresh field in the current format. Undo brings the activity back.</p>
@@ -162,10 +187,11 @@
   </form>
 </dialog>
 
-<dialog id="nameDialog" aria-labelledby="name-title"><form id="name-form"><div class="dialog-title"><h2 id="name-title">Save board</h2><button type="button" class="x" data-close="nameDialog" aria-label="Cancel">✕</button></div><label>Name<input id="board-name" maxlength="80" required autofocus></label><button type="submit" class="accent wide">Save</button><p id="name-error" class="form-error" role="alert"></p></form></dialog>
-<dialog id="rosterDialog" aria-labelledby="roster-title"><form id="roster-form"><div class="dialog-title"><h2 id="roster-title">Add player</h2><button type="button" class="x" data-close="rosterDialog" aria-label="Cancel">✕</button></div><label>Name or nickname<input id="roster-name" maxlength="48" required autocomplete="off"></label><label>Jersey number<input id="roster-number" type="number" min="0" max="99" step="1" inputmode="numeric" required></label><label>Role to try (optional)<select id="roster-role"><option value="">Any role</option></select></label><button type="submit" class="accent wide">Save player</button><p id="roster-error" class="form-error" role="alert"></p></form></dialog>
-<dialog id="confirmDialog" aria-labelledby="confirm-title"><form method="dialog"><div class="dialog-title"><h2 id="confirm-title">Review change</h2><button value="cancel" class="x" aria-label="Cancel">✕</button></div><p id="confirm-message"></p><div class="button-row"><button value="cancel" class="grow">Cancel</button><button id="confirm-accept" value="accept" class="accent grow">Continue</button></div></form></dialog>
-<dialog id="sourceDialog" aria-labelledby="source-title"><div class="dialog-title"><h2 id="source-title">How to play &amp; source</h2><button class="x" data-close="sourceDialog" aria-label="Close">✕</button></div><div id="source-details"></div></dialog>
+<dialog id="nameDialog" aria-labelledby="name-title"><form id="name-form"><div class="dialog-title"><h2 id="name-title">Save board</h2><button type="button" class="x" data-close="nameDialog" aria-label="Cancel">Close</button></div><label>Name<input id="board-name" maxlength="80" required autofocus></label><button type="submit" class="accent wide">Save</button><p id="name-error" class="form-error" role="alert"></p></form></dialog>
+<dialog id="rosterDialog" aria-labelledby="roster-title"><form id="roster-form"><div class="dialog-title"><h2 id="roster-title">Add player</h2><button type="button" class="x" data-close="rosterDialog" aria-label="Cancel">Close</button></div><label>Name or nickname<input id="roster-name" maxlength="48" required autocomplete="off"></label><label>Jersey number<input id="roster-number" type="number" min="0" max="99" step="1" inputmode="numeric" required></label><label>Role to try (optional)<select id="roster-role"><option value="">Any role</option></select></label><button type="submit" class="accent wide">Save player</button><p id="roster-error" class="form-error" role="alert"></p></form></dialog>
+<dialog id="confirmDialog" aria-labelledby="confirm-title"><form method="dialog"><div class="dialog-title"><h2 id="confirm-title">Review change</h2><button value="cancel" class="x" aria-label="Cancel">Close</button></div><p id="confirm-message"></p><div class="button-row"><button value="cancel" class="grow">Cancel</button><button id="confirm-accept" value="accept" class="accent grow">Continue</button></div></form></dialog>
+<dialog id="sourceDialog" aria-labelledby="source-title"><div class="dialog-title"><h2 id="source-title">How to play &amp; source</h2><button class="x" data-close="sourceDialog" aria-label="Close">Close</button></div><div id="source-details"></div></dialog>
+<dialog id="matchDialog" aria-labelledby="match-title"><div class="dialog-title"><h2 id="match-title">Match</h2><button class="x" id="match-close" aria-label="Close match">Close</button></div><div id="match-body"></div></dialog>
 <input id="import-input" type="file" accept=".json,application/json" hidden>
 <div id="app-notice" class="app-notice" role="status" aria-live="polite" hidden></div>
 
@@ -179,6 +205,8 @@
 <script defer src="./app.js"></script>
 <script defer src="./releases.js"></script>
 <script defer src="./release-notes.js"></script>
+<script defer src="./match.js"></script>
 <script defer src="./workspace.js"></script>
+<script defer src="./match-ui.js"></script>
 </body>
 </html>

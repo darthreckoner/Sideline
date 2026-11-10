@@ -1,0 +1,74 @@
+// Real browser workflow against isolated local storage, with a controlled clock.
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const http = require('node:http');
+const { chromium } = require('playwright');
+const root = path.resolve(__dirname, '..');
+const server = http.createServer((req, res) => {
+  const file = path.resolve(root, '.' + (new URL(req.url, 'http://localhost').pathname === '/' ? '/index.html' : new URL(req.url, 'http://localhost').pathname));
+  if (!file.startsWith(root + path.sep)) return res.writeHead(403).end();
+  try { res.setHeader('Content-Type', file.endsWith('.js') ? 'application/javascript' : file.endsWith('.css') ? 'text/css' : 'text/html'); res.end(fs.readFileSync(file)); } catch { res.writeHead(404).end(); }
+});
+(async () => {
+  await new Promise(r => server.listen(0, '127.0.0.1', r));
+  const browser = await chromium.launch({ channel: 'chrome', headless: true });
+  const page = await browser.newPage({ viewport: { width: 844, height: 500 } });
+  const errors = []; page.on('pageerror', e => errors.push(e.message)); page.setDefaultTimeout(6000);
+  const url = `http://127.0.0.1:${server.address().port}/?preview=1`;
+  const accept = async () => page.locator('#confirm-accept').click();
+  async function ready() { await page.waitForFunction(() => window.SIDELINE_MATCH_UI && document.querySelector('#team-picker').options.length > 0); if (await page.locator('#releaseDialog').evaluate(d => d.open)) await page.locator('#release-dismiss').click(); }
+  async function fieldTap(index = 0) {
+    const pt = await page.evaluate((index) => { const m=SIDELINE_MATCH_UI.active; const p=SIDELINE_BOARD.make(SIDELINE_PRESETS[m.format],m.formation).players.filter(p=>p.team===m.side)[index]; const b=document.querySelector('#match-pitch').getBoundingClientRect(),rot=b.height>b.width,scale=Math.min(b.width/(rot?620:1000),b.height/(rot?1000:620));return {x:b.left+(b.width-(rot?620:1000)*scale)/2+(rot?p.y:p.x)*scale,y:b.top+(b.height-(rot?1000:620)*scale)/2+(rot?1000-p.x:p.y)*scale}; }, index);
+    await page.evaluate(({x,y})=>{const v=document.getElementById('match-view'),bar=document.getElementById('match-strip').getBoundingClientRect(),nav=document.querySelector('.app-tabs').getBoundingClientRect();if(y>nav.top-10)v.scrollTop+=y-nav.top+30;else if(y<bar.bottom+10)v.scrollTop-=bar.bottom+30-y;},pt);
+    const fresh = await page.evaluate((index)=>{const m=SIDELINE_MATCH_UI.active,p=SIDELINE_BOARD.make(SIDELINE_PRESETS[m.format],m.formation).players.filter(p=>p.team===m.side)[index],b=document.querySelector('#match-pitch').getBoundingClientRect(),rot=b.height>b.width,scale=Math.min(b.width/(rot?620:1000),b.height/(rot?1000:620));return {x:b.left+(b.width-(rot?620:1000)*scale)/2+(rot?p.y:p.x)*scale,y:b.top+(b.height-(rot?1000:620)*scale)/2+(rot?1000-p.x:p.y)*scale};},index);
+    await page.mouse.click(fresh.x, fresh.y);
+  }
+  try {
+    await page.clock.install();
+    await page.goto(url); await ready();
+    assert.equal(await page.locator('#board-view').isVisible(), true);
+    assert.deepEqual(await page.locator('.app-tabs [data-tab]').evaluateAll(ns=>ns.map(n=>n.dataset.tab)),['board','team','match','coaching']);
+    await page.evaluate(async () => {
+      const team = SIDELINE_DATA.newTeam(SIDELINE_PRESETS); team.name = 'Review United';
+      team.roster = Array.from({length:11}, (_, i) => ({ id:`r${i}`, name:`Player ${i+1}`, number:i+1, available:true })); team.assignments = team.roster.slice(0,9).map(p=>p.id);
+      await SIDELINE_STORE.run('workspace','put',{key:'teams',teams:[team],selectedTeam:team.id});
+    });
+    await page.reload(); await ready();
+    await page.locator('#tab-team').click(); await page.locator('#team-lineup-tab').click();
+    await page.locator('.team-management > summary').click();
+    await page.locator('#set-default-lineup').click();
+    await page.locator('#tab-board').click(); await page.locator('#menu').click(); await page.locator('#board-default').click();
+    await page.locator('#tab-match').click();
+    await page.locator('#open-match').click();
+    await page.getByLabel('Opponent', {exact:true}).fill('Visitors'); await page.getByLabel('Season', {exact:true}).fill('Fall 2026');
+    await page.getByRole('button',{name:'Prepare match',exact:true}).click();
+    await page.locator('#matchDialog').waitFor({state:'hidden'});
+
+
+    await page.locator('#field-player-picker summary').click();
+    assert.match(await page.locator('#match-field-players button').first().textContent(), /Player 1/);
+    await page.locator('#match-details').click();
+    await page.getByRole('button',{name:'Discard this match',exact:true}).click();
+    await page.locator('#confirm-accept').click();
+    await page.locator('#matchDialog').waitFor({state:'hidden'});
+    const fullName='Alexandria Montgomery-Smith';
+    await page.evaluate(async name=>{SIDELINE_WORKSPACE.currentTeam().roster[0].name=name;await SIDELINE_WORKSPACE.flush();},fullName);
+    await page.locator('#open-match').click();
+    await page.getByRole('button',{name:'Prepare match',exact:true}).click();
+    await page.locator('#matchDialog').waitFor({state:'hidden'});
+    assert.equal(await page.locator('#match-field-players button').first().textContent(), '#1 '+fullName, 'picker must refresh renamed player between matches');
+    for(const width of [320,390]) {
+      await page.setViewportSize({width,height:844});
+      await page.locator('#match-details').click();
+      const scroller=page.locator('#match-body .stat-scroll').first();
+      await scroller.evaluate(n=>n.scrollLeft=n.scrollWidth);
+      const rects=await scroller.evaluate(n=>({box:n.getBoundingClientRect().toJSON(),name:n.querySelector('td').getBoundingClientRect().toJSON(),goals:n.querySelector('th:last-child').getBoundingClientRect().toJSON()}));
+      assert.ok(rects.name.width<=145,'long name must not widen pinned column');
+      assert.ok(rects.goals.left>=rects.name.right && rects.goals.right<=rects.box.right+1,'Goals must remain visible beside long player name');
+      assert.equal(await scroller.locator('td').first().getAttribute('title'),'#1 '+fullName);
+      await page.locator('#match-close').click();
+    }
+    console.log('PASS long-name metrics visibility and refreshed player picker between matches');
+  } finally { await browser.close(); await new Promise(r=>server.close(r)); }
+})().catch(e=>{console.error(e);process.exitCode=1;});

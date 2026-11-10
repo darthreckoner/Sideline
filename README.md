@@ -2,7 +2,7 @@
 
 Sideline is a soccer whiteboard for iPhone, iPad and desktop. Use it to show your players where to move and pass, then take the idea onto the field. It works offline after setup and doesn't need an account. The board starts at 9v9; you can choose 7v7 under Team → Quick board setup. The published app is at [Sideline](https://darthreckoner.github.io/Sideline/); the deployment record is in [verification](docs/verification/2026-10-26/README.md).
 
-Arrange the players, tap Set start, and show the play. Tap Reset to show it again. Coaching has activity ideas and your saved boards. Team is where you can build a roster and plan lineups. Everything stays on your device unless you export or share it. Match tracking, accounts, subscriptions, cloud sync, AI and animation timelines are outside this release.
+Arrange the players, tap Set position, and show the play. Tap Reset to show it again. Coaching has activity ideas and your saved boards. Team is where you can build a roster and plan lineups. Everything stays on your device unless you export or share it. Accounts, subscriptions, cloud sync, AI and animation timelines are outside this release.
 
 The [soccer coaching plan](SOCCER_PLAN.md) and [team setup plan](TEAM_PLAN.md) describe the design. The [earlier screen concepts](docs/design/soccer-tabs/README.md) are design references. Current verification is recorded in [v0.5 checks](docs/verification/2026-10-26/README.md).
 
@@ -34,9 +34,11 @@ Site: [Sideline](https://darthreckoner.github.io/Sideline/)
 
 GitHub Pages publishes the root of the `main` branch. The `.nojekyll` file keeps this a plain static site; no build or dependency installation is required. Keep asset paths relative so the app, icons, manifest, and service worker work under `/Sideline/`.
 
-To publish updates, commit the changed files and push `main` to [darthreckoner/Sideline](https://github.com/darthreckoner/Sideline). GitHub Pages deploys the changes automatically. Bump the cache version in `sw.js` whenever runtime files change. Each update caches a complete release in the background, then takes over after all existing Sideline tabs and windows close. Open online, close Sideline, and reopen to pick up a downloaded update.
+After the release notes have been approved as described below, publish updates by committing the changed files and pushing `main` to [darthreckoner/Sideline](https://github.com/darthreckoner/Sideline). GitHub Pages deploys the changes automatically. Bump the cache version in `sw.js` whenever runtime files change. Each update caches a complete release in the background, then takes over after all existing Sideline tabs and windows close. Open online, close Sideline, and reopen to pick up a downloaded update.
 
 For each release, append a short, user-facing entry to `releases.js` and set the `sw.js` cache version to the same version. Keep the older entries so people who skip releases can see what changed. The test suite checks that the release and cache versions match. Don't change a released entry in place; a new release needs a new version.
+
+Record every change in the pending release's What's new entry as the work is completed. Before publication, compare the entry with all changes since the last published release and include anything missing. Present the exact version heading and card text to the user, and obtain their explicit sign-off on that text before publishing. If the card text or release scope changes after approval, show the revised card and obtain sign-off again. Local implementation and testing may continue while the card is being prepared.
 
 ## How it works
 
@@ -56,7 +58,7 @@ Players show their positions at first. In Move mode, hold a player for about hal
 
 Before you set a start, tap Reset to return the players and ball to their default positions for the selected formations. Your lineup, labels, colors and drawings stay in place. Activities return to their original setup. Tap Undo to bring the previous play back.
 
-To save your own starting point, put the players, ball and drawings where you want them, then tap Set start. Move or pass, and tap Reset to return to that starting point. Repeat as often as you like. Set start and Reset both select Move; a saved start also restores its colors and drawings.
+To save your own starting point, put the players, ball and drawings where you want them, then tap Set position. Move or pass, and tap Reset to return to that starting point. Repeat as often as you like. Set position and Reset both select Move; a saved start also restores its colors and drawings.
 
 Choose Arrow, then Pass for a solid arrow or Run for a dashed arrow. Swipe across the field to place it. Choose Draw to sketch or Erase to remove a line. Move mode won't draw.
 
@@ -72,7 +74,7 @@ Offense draws triangles among the visible players on your team. A triangle needs
 
 In Team → Quick board setup, choose Home, Away or both and pick a formation. The 9v9 choices are 3-3-2 and 3-2-3; the 7v7 choices are 2-3-1 and 3-2-1. Reset both teams puts the players back in their default positions and labels, keeps the colors, and clears drawings and the saved starting point. Undo brings the previous board back.
 
-To use a roster, add your players in Team, check who's available, and choose the starters. Check the lineup preview and tap Apply to board. Team edits alone don't change the board. After applying a lineup, tap Set start on the board if you want to demonstrate a play.
+To use a roster, add your players in Team, check who's available, and choose the starters. Check the lineup preview and tap Apply to board. Team edits alone don't change the board. After applying a lineup, tap Set position on the board if you want to demonstrate a play.
 
 ### Save, share and back up
 
@@ -97,7 +99,7 @@ Label edits are included in saved boards, starting points and PNGs. Older saved 
 ## v0.3 prototype completion
 
 - Exposes the existing formation presets and adds a separate, undoable Reset formation.
-- Set start and Reset return to Move so drawing mode cannot interfere with a demonstration.
+- Set position and Reset return to Move so drawing mode cannot interfere with a demonstration.
 - Soccer field markings live in a preset renderer; the shared board uses preset dimensions and generates its format choices from the preset registry.
 - Existing saved boards without formation metadata still open at their saved positions. Reset formation uses that format's default formation.
 - Clarifies that Home Screen installation does not guarantee preservation of local saves.
@@ -130,4 +132,23 @@ Run `node --test tests/*.test.cjs` for board, data, release-note and offline-she
 
 ## Still to test on a real iPhone
 
-Outdoors in sunlight, one-handed: open, pass, drag, Set start, Reset — under 30 seconds. Hold a player, change Pos / #, and verify quick taps and drags do not open its menu. Check all three tabs, roster typing and lineup assignment, the save dialog, recovered draft, native board/team-file sharing and imports, Home Screen install, offline relaunch and PNG → Messages. Test a service-worker update with existing saves, the What's new dismissal across relaunches, and the feedback email draft. Independent youth-coach review and on-field teaching checks are separate from these device checks.
+Outdoors in sunlight, one-handed: open, pass, drag, Set position, Reset — under 30 seconds. Hold a player, change Pos / #, and verify quick taps and drags do not open its menu. Check all four tabs, roster typing and lineup assignment, the save dialog, recovered draft, native board/team-file sharing and imports, Home Screen install, offline relaunch and PNG → Messages. Test a service-worker update with existing saves, the What's new dismissal across relaunches, and the feedback email draft. Independent youth-coach review and on-field teaching checks are separate from these device checks.
+
+## Local match tracking (v0.6.0, pending review)
+
+Home opens the landing screen without stopping your match or discarding your board. Use Default board there for the standard formation or the optional starting lineup saved from Team. Open board resumes your existing board.
+
+Apply a saved team's lineup, then choose Match setup on the board. Set the opponent, named season, and half length (1?90 minutes). Prepare match, then Begin first half. The count-up clock stops at the regulation half boundary while a separate stoppage counter continues until End of half. Begin second half resumes regulation time at that boundary. End match saves the game under Team ? Game & season stats. Pause stops all player timers; navigation and reload do not pause a running match. Player time includes stoppage but excludes halftime and manual pauses.
+
+Available substitutes sit beside the pitch. In Move mode, tap an on-field player and then a substitute (or the reverse) to swap them. The selected field player gets a gold ring. Cancel clears the selection. In a match, the outgoing timer stops and the incoming timer starts immediately. Tactical Reset and Undo cannot undo a recorded substitution. Finish or discard the match before opening a different board or changing formation. Tap the ball first when you want to pass while a roster is applied.
+
+Goal opens scorer selection and includes Opponent goal. Details shows current player times and lets you remove an incorrectly recorded goal. Completed match stats and season totals stay attached to the saved team's identity even if you later edit its roster. Export match records downloads a separate JSON record of the ledger; keep that file as a backup. Match-record import is not provided in this release.
+
+Opening a saved play establishes its reset position. Set position changes the reset point for the current session, including recovered drafts, without changing the playbook record. Reopening the saved play restores its saved position. Save explicitly asks ?Overwrite existing play?? before updating an opened play, followed by ?Play updated?. Use Copy in the playbook to create a separate play.
+
+Review build remains local. No publication is authorized until local review and approval of the complete What's new card.
+
+
+## Board, Team, Match and Coaching
+
+Board is the landing screen, recovering the existing board draft or opening its default formation. The four tabs remain visible at the bottom. Board holds teaching, drawing and demonstration tools. Team prepares rosters and lineups. Match setup captures the selected Team lineup into a separate match pitch, with score, halves, clock, substitutions, goals and statistics. Later teaching-board or Team edits do not alter an active match. The clock and match roster survive switching tabs and reloads. Coaching holds lessons and the playbook. Board menu > Default board restores the configured default lineup or formation.

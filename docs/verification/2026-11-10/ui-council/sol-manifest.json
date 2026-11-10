@@ -1,0 +1,191 @@
+{
+  "review": "Sol independent council round 4",
+  "origin": "http://127.0.0.1:18147/?preview=1",
+  "score": 9,
+  "scope": "No app or project edits. Synthetic team and active match only on isolated origin.",
+  "computed": {
+    "bg": "#11191d",
+    "compactCanvasWidth": 293,
+    "compactCanvasHeight": 440
+  },
+  "verification": {
+    "mobile": "13 checks passed including CDP touch swipe with unchanged board and player drag/Undo",
+    "match": "Workflow passed",
+    "unit": "66/66 passed",
+    "previewSelection": "Click LF at 320x568 selected roster r7; scrollTop stayed zero"
+  },
+  "limits": "Chrome simulation and browser screenshots, not physical iPhone/iPad acceptance. Preview selection used mouse.",
+  "screenshots": [
+    {
+      "size": {
+        "width": 1280,
+        "height": 800
+      },
+      "view": "home",
+      "path": "C:\\Users\\Justin Rutledge\\.t3\\userdata\\browser-artifacts\\browser-screenshot-127-0-0-1-mwb7lcgb-ffab5a00.png",
+      "file": "home-1280x800.png"
+    },
+    {
+      "size": {
+        "width": 1280,
+        "height": 800
+      },
+      "view": "board",
+      "path": "C:\\Users\\Justin Rutledge\\.t3\\userdata\\browser-artifacts\\browser-screenshot-127-0-0-1-mwb7lcom-168105d0.png",
+      "file": "board-1280x800.png"
+    },
+    {
+      "size": {
+        "width": 1280,
+        "height": 800
+      },
+      "view": "coaching",
+      "path": "C:\\Users\\Justin Rutledge\\.t3\\userdata\\browser-artifacts\\browser-screenshot-127-0-0-1-mwb7lcxo-e7294607.png",
+      "file": "coaching-1280x800.png"
+    },
+    {
+      "size": {
+        "width": 1280,
+        "height": 800
+      },
+      "view": "team",
+      "path": "C:\\Users\\Justin Rutledge\\.t3\\userdata\\browser-artifacts\\browser-screenshot-127-0-0-1-mwb7ld3m-4a55a905.png",
+      "file": "team-1280x800.png"
+    },
+    {
+      "size": {
+        "width": 390,
+        "height": 844
+      },
+      "view": "home",
+      "path": "C:\\Users\\Justin Rutledge\\.t3\\userdata\\browser-artifacts\\browser-screenshot-127-0-0-1-mwb7ldnr-a86496e5.png",
+      "file": "home-390x844.png"
+    },
+    {
+      "size": {
+        "width": 390,
+        "height": 844
+      },
+      "view": "board",
+      "path": "C:\\Users\\Justin Rutledge\\.t3\\userdata\\browser-artifacts\\browser-screenshot-127-0-0-1-mwb7ldud-0f5ff96c.png",
+      "file": "board-390x844.png"
+    },
+    {
+      "size": {
+        "width": 390,
+        "height": 844
+      },
+      "view": "coaching",
+      "path": "C:\\Users\\Justin Rutledge\\.t3\\userdata\\browser-artifacts\\browser-screenshot-127-0-0-1-mwb7le1o-c86cf54f.png",
+      "file": "coaching-390x844.png"
+    },
+    {
+      "size": {
+        "width": 390,
+        "height": 844
+      },
+      "view": "team",
+      "path": "C:\\Users\\Justin Rutledge\\.t3\\userdata\\browser-artifacts\\browser-screenshot-127-0-0-1-mwb7le8y-370e9e20.png",
+      "file": "team-390x844.png"
+    },
+    {
+      "size": {
+        "width": 320,
+        "height": 568
+      },
+      "view": "home",
+      "path": "C:\\Users\\Justin Rutledge\\.t3\\userdata\\browser-artifacts\\browser-screenshot-127-0-0-1-mwb7leh1-53bb068b.png",
+      "file": "home-320x568.png"
+    },
+    {
+      "size": {
+        "width": 320,
+        "height": 568
+      },
+      "view": "board",
+      "path": "C:\\Users\\Justin Rutledge\\.t3\\userdata\\browser-artifacts\\browser-screenshot-127-0-0-1-mwb7lemo-a271d45a.png",
+      "file": "board-320x568.png"
+    },
+    {
+      "size": {
+        "width": 320,
+        "height": 568
+      },
+      "view": "coaching",
+      "path": "C:\\Users\\Justin Rutledge\\.t3\\userdata\\browser-artifacts\\browser-screenshot-127-0-0-1-mwb7leru-f50c4808.png",
+      "file": "coaching-320x568.png"
+    },
+    {
+      "size": {
+        "width": 320,
+        "height": 568
+      },
+      "view": "team",
+      "path": "C:\\Users\\Justin Rutledge\\.t3\\userdata\\browser-artifacts\\browser-screenshot-127-0-0-1-mwb7leye-9e7adb2d.png",
+      "file": "team-320x568.png"
+    },
+    {
+      "size": {
+        "width": 1280,
+        "height": 800
+      },
+      "view": "active-match",
+      "path": "C:\\Users\\Justin Rutledge\\.t3\\userdata\\browser-artifacts\\browser-screenshot-127-0-0-1-mwb7lzfw-bb4808c3.png",
+      "file": "active-match-1280x800.png"
+    },
+    {
+      "size": {
+        "width": 390,
+        "height": 844
+      },
+      "view": "active-match",
+      "path": "C:\\Users\\Justin Rutledge\\.t3\\userdata\\browser-artifacts\\browser-screenshot-127-0-0-1-mwb7lzu6-8456bae4.png",
+      "file": "active-match-390x844.png"
+    },
+    {
+      "size": {
+        "width": 320,
+        "height": 568
+      },
+      "view": "active-match",
+      "path": "C:\\Users\\Justin Rutledge\\.t3\\userdata\\browser-artifacts\\browser-screenshot-127-0-0-1-mwb7m08q-bf954234.png",
+      "file": "active-match-320x568.png"
+    },
+    {
+      "size": {
+        "width": 320,
+        "height": 568
+      },
+      "view": "board-scrolled-tools",
+      "path": "C:\\Users\\Justin Rutledge\\.t3\\userdata\\browser-artifacts\\browser-screenshot-127-0-0-1-mwb7m0gj-d41d18f0.png",
+      "file": "board-scrolled-tools-320x568.png"
+    },
+    {
+      "size": {
+        "width": 320,
+        "height": 568
+      },
+      "view": "lineup",
+      "path": "C:\\Users\\Justin Rutledge\\.t3\\userdata\\browser-artifacts\\browser-screenshot-127-0-0-1-mwb7md42-568f3a1f.png",
+      "file": "lineup-320x568.png"
+    },
+    {
+      "size": {
+        "width": 320,
+        "height": 568
+      },
+      "view": "lineup-scrolled",
+      "path": "C:\\Users\\Justin Rutledge\\.t3\\userdata\\browser-artifacts\\browser-screenshot-127-0-0-1-mwb7md8n-cc6bb84d.png",
+      "file": "lineup-scrolled-320x568.png"
+    },
+    {
+      "size": {
+        "width": 320,
+        "height": 568
+      },
+      "view": "player-selected",
+      "path": "C:\\Users\\Justin Rutledge\\.t3\\userdata\\browser-artifacts\\browser-screenshot-127-0-0-1-mwb7n1hs-956117f5.png",
+      "file": "player-selected-320x568.png"
+    }
+  ]
+}

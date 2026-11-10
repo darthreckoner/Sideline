@@ -1,0 +1,237 @@
+// Persistent match ledger and UI. Board history cannot rewrite match membership.
+(function () {
+  "use strict";
+  const M = window.SIDELINE_MATCH, B = window.SIDELINE_BOARD, W = window.SIDELINE_WORKSPACE, S = window.SIDELINE_STORE;
+  const $ = (id) => document.getElementById(id);
+  const node = (tag, text) => { const n = document.createElement(tag); if (text != null) n.textContent = text; return n; };
+  const fmt = (ms) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+  let active = null, matches = [], seasons = {}, pickedField = null, pickedBench = null, writing = Promise.resolve(), syncing = false, loaded = false;
+  let dialogMode = null, benchSignature = null, fieldSignature = null, lastSwap = "";
+  function persist() {
+    const value = structuredClone({ key: "matches", active, matches, seasons });
+    writing = writing.catch(() => {}).then(() => S.run("workspace", "put", value));
+    writing.catch(() => W.notice("Match could not save. Keep this window open and export match records from Details."));
+    return writing;
+  }
+  function act(fn) { try { fn(); persist(); render(); } catch (e) { W.notice(e.message); } }
+  function button(parent, text, fn) { const b = node("button", text); b.type = "button"; b.onclick = async () => { try { await fn(); } catch (e) { W.notice(e.message); } }; parent.append(b); return b; }
+  function field(label, type, value) { const l = node("label", label), input = node("input"); input.type = type; input.value = value; l.append(input); $("match-body").append(l); return input; }
+  function show(mode, title) { dialogMode = mode; $("match-title").textContent = title; $("match-body").replaceChildren(); if (!$("matchDialog").open) $("matchDialog").showModal(); }
+  let pitchState = null;
+  function context() {
+    const team = active ? { id:active.teamId, name:active.teamName, format:active.format, formation:active.formation, roster:active.roster, assignments:active.slots, color:active.color || "#ffcb54" } : W.currentTeam();
+    const side = active?.side || "home";
+    const board = B.make(window.SIDELINE_PRESETS[team.format], team.formation);
+    board.teachingTeam = side; board.colors[side] = team.color;
+    const markers = board.players.filter(p=>p.team === side);
+    board.players = board.players.filter(p=>p.team !== side);
+    markers.forEach((marker,i)=>{
+      const person = team.roster.find(p=>p.id === team.assignments[i]);
+      if (person) board.players.push({...marker, rosterId:person.id, n:person.number, name:person.name, sourceTeamId:team.id, lineupSlot:i, display:"number"});
+    });
+    board.ball = {x:500,y:310,carrier:null};
+    return {team, side, board, markers:board.players.filter(p=>p.team === side)};
+  }
+  function renderPitch() {
+    if (!W.ready) return;
+    const canvas = $("match-pitch"), box = canvas.getBoundingClientRect();
+    if (!box.width || !box.height) return;
+    const {board, team} = context(); pitchState = board;
+    canvas.width = Math.round(box.width); canvas.height = Math.round(box.height);
+    B.preview(canvas, board, true);
+    $("match-context").textContent = active ? `${active.teamName} vs ${active.opponent}` : `${team.name} - current Team lineup`;
+  }
+  function restoreBoard() { renderPitch(); }
+  function syncPlayers() { renderPitch(); }
+  function setup() {
+    if (!loaded) return W.notice("Opening match records…");
+    if (active) return details();
+    const { team, markers, side, board } = context();
+    show("setup", "Match setup");
+    if (!team.roster.length || !markers.length) { $("match-body").append(node("p", "Choose your starters in Team before starting a match.")); button($("match-body"), "Open Team", () => { $("matchDialog").close(); W.switchTab("team"); }); return; }
+    $("match-body").append(node("p", team.name));
+    const opponent = field("Opponent", "text", ""); opponent.maxLength = 80;
+    const half = field("Minutes per half", "number", 25); half.min = 1; half.max = 90;
+    const season = field("Season", "text", seasons[team.id]?.at(-1) || String(new Date().getFullYear())); season.maxLength = 80;
+    button($("match-body"), "Prepare match", async () => {
+      try {
+        const name = season.value.trim(); if (!name) throw Error("Name the season first.");
+        window.SIDELINE_DATA.lineup(team, window.SIDELINE_PRESETS);
+        // Capture the selected Team lineup; subsequent Team edits do not change the match.
+        const roles = window.SIDELINE_PRESETS[board.format].formationPositions[board.formations?.[side] || board.formation];
+        const lineup = { ...team, format: board.format, formation: board.formations?.[side] || board.formation,
+          assignments: roles.map((role) => markers.find((p) => p.lineupSlot === roles.indexOf(role) || (p.lineupSlot == null && p.position === role))?.rosterId || null) };
+        const prepared = M.create({ id: window.SIDELINE_DATA.id(), team: lineup, side, halfMinutes: Number(half.value), season: name, opponent: opponent.value.trim() || "Opponent" });
+        prepared.color = team.color;
+        active = prepared; seasons[team.id] ||= []; if (!seasons[team.id].includes(name)) seasons[team.id].push(name);
+        await persist(); $("matchDialog").close(); pickedField = pickedBench = null; render();
+      } catch (e) { W.notice(e.message); }
+    });
+  }
+  function selection() {
+    if (pickedField == null || !pickedBench) return renderBench();
+    if (active) {
+      const outgoing = active.roster.find(p=>p.id===active.slots[pickedField]);
+      const incoming = active.roster.find(p=>p.id===pickedBench);
+      act(() => { M.substitute(active, pickedField, pickedBench); lastSwap = `On: #${incoming.number} ${incoming.name}. Off: #${outgoing.number} ${outgoing.name}.`; });
+    }
+    else {
+      W.notice("Prepare the match before making substitutions.");
+    }
+    pickedField = pickedBench = null; render();
+  }
+  function tap(player, matchTap = false) {
+    if (!matchTap) return false;
+    const { team, side, markers } = context();
+    if (!active && !team) return false;
+    if (player.team !== (active?.side || side) || !player.rosterId) return false;
+    pickedField = active ? active.slots.indexOf(player.rosterId) : markers.findIndex((p) => p.id === player.id);
+    selection(); return true;
+  }
+  function renderBench() {
+    const { team, markers } = context();
+    const roster = active?.roster || team?.roster.filter((p) => p.available) || [];
+    const slots = active?.slots || markers.map((p) => p.rosterId);
+    const bench = roster.filter((p) => !slots.includes(p.id));
+    $("sideline").hidden = !active;
+    const selected = roster.find(p=>p.id === (pickedField != null ? slots[pickedField] : pickedBench));
+    const hint = selected ? `#${selected.number} ${selected.name}: ${pickedField != null ? "choose a substitute" : "choose an on-field player"}` : "Tap a player and a substitute to swap";
+    $("match-selection").textContent = active ? (selected ? hint : lastSwap || "Tap a player and a substitute to swap") : "Prepare a match to enable substitutions.";
+    const key = JSON.stringify([slots, roster.map(p=>[p.id,p.number,p.name]), pickedField]);
+    if (key !== fieldSignature) {
+      fieldSignature = key; const list = $("match-field-players"); list.replaceChildren();
+      slots.forEach((id,i)=>{const p=roster.find(p=>p.id===id); if(p) { const b=button(list, `#${p.number} ${p.name}`,()=>{ pickedField=i; selection(); renderPitch(); }); b.setAttribute("aria-pressed",String(i===pickedField)); }});
+    }
+    $("sub-hint").textContent = hint;
+    $("cancel-sub").hidden = pickedField == null && !pickedBench;
+    const root = $("sideline-players");
+    const signature = JSON.stringify([bench.map(p => [p.id, p.number, p.name]), pickedBench, !!roster.length]);
+    if (signature === benchSignature) return;
+    benchSignature = signature;
+    root.replaceChildren();
+    for (const p of bench) { const b = button(root, `#${p.number} ${p.name}`, () => { pickedBench = pickedBench === p.id ? null : p.id; selection(); }); b.setAttribute("aria-pressed", String(pickedBench === p.id)); }
+    if (!bench.length && roster.length) root.append(node("small", "No subs"));
+  }
+  const phaseText = () => active.phase === "ready" ? "Ready for kickoff" : active.phase === "halftime" ? "Halftime" : active.running ? "Running" : "Paused";
+  function tick() {
+    if (!active) return;
+    const c = M.clock(active);
+    $("match-phase").textContent = phaseText();
+    $("match-clock").textContent = `${active.half === 1 ? "1st" : "2nd"} ${fmt(c.main)}`;
+    $("match-stoppage").textContent = c.stoppage || M.elapsed(active) >= active.halfMs ? `+${fmt(c.stoppage)}` : "";
+    if (dialogMode === "details" && $("matchDialog").open) for (const el of document.querySelectorAll("[data-player-time]")) el.textContent = fmt(M.times(active)[el.dataset.playerTime] || 0);
+  }
+  function render() {
+    const hasStarters = context().markers.length > 0;
+    $("match-prereq").hidden = !!active;
+    $("match-prereq-text").textContent = hasStarters ? "Lineup ready. Choose Match setup to prepare the game before making substitutions." : "Choose your starters in Team, then return here to set up the match.";
+    $("match-prereq").querySelector("button").hidden = hasStarters;
+    document.querySelector(".match-layout").hidden = !active && !hasStarters;
+    syncPlayers(); renderBench();
+    $("open-match").hidden = !!active;
+    for (const id of ["match-toggle", "match-end", "match-goal", "match-details"]) $(id).hidden = !active;
+    if (!active) { $("match-phase").textContent = "Match setup"; lastSwap = ""; pickedField = pickedBench = null; $("match-clock").textContent = $("match-stoppage").textContent = $("match-score").textContent = ""; return; }
+    $("match-toggle").textContent = active.phase === "ready" ? "Begin first half" : active.phase === "halftime" ? "Begin second half" : active.running ? "Pause" : "Resume";
+    $("match-end").hidden = active.phase !== "playing";
+    $("match-end").textContent = active.half === 1 ? "End of half" : "End match";
+    $("match-goal").disabled = active.phase !== "playing";
+    $("match-score").textContent = `${active.goals.filter((g) => g.playerId !== null).length} – ${active.goals.filter((g) => g.playerId === null).length}`;
+    tick();
+  }
+  function goals() {
+    show("goals", "Record a goal");
+    for (const onField of [true,false]) {
+      $("match-body").append(node("h3", onField ? "On field" : "Substitutes"));
+      for (const p of active.roster.filter(p=>active.slots.includes(p.id)===onField)) button($("match-body"), `#${p.number} ${p.name}`, () => { act(() => M.goal(active, p.id)); $("matchDialog").close(); });
+    }
+    button($("match-body"), "Opponent goal", () => { act(() => M.goal(active, null)); $("matchDialog").close(); });
+  }
+  function table(parent, rows, live = false) {
+    const wrap = node("div"); wrap.className = "stat-scroll";
+    const table = node("table"), head = node("tr");
+    for (const title of ["Player", "Games", "Time played", "Goals"]) head.append(node("th", title)); table.append(head);
+    for (const p of rows) { const row = node("tr"); const identity = node("td", `#${p.number} ${p.name}`); identity.title = identity.textContent; row.append(identity, node("td", p.games)); const time = node("td", fmt(p.ms)); if (live) time.dataset.playerTime = p.id; row.append(time, node("td", p.goals)); table.append(row); }
+    wrap.append(table); parent.append(wrap);
+  }
+  function details() {
+    if (!active) return setup();
+    show("details", `${active.teamName} vs ${active.opponent}`);
+    const body = $("match-body"); body.append(node("p", `${active.season} · ${phaseText()}`));
+    const view = { ...active, time: M.times(active) }; table(body, M.totals([view]), true);
+    body.append(node("h3", "Goals — tap to correct"));
+    active.goals.forEach((g, i) => button(body, `${g.playerId === null ? "Opponent" : active.roster.find((p) => p.id === g.playerId)?.name} · Half ${g.half} ${fmt(g.elapsed)} · Remove`, async () => {
+      if (await W.confirm("Remove this goal from the score and player stats?", "Remove goal")) { act(() => active.goals.splice(i, 1)); details(); }
+    }));
+    button(body, "Export match records", exportRecords);
+    button(body, "Discard this match", async () => { if (await W.confirm("Discard this match and its recorded time and goals?", "Discard")) { active = null; await persist(); $("matchDialog").close(); render(); } }).classList.add("danger");
+  }
+  function exportRecords() {
+    const a = node("a"), url = URL.createObjectURL(new Blob([JSON.stringify({ kind: "sideline-matches", version: 1, active, matches, seasons }, null, 2)], { type: "application/json" }));
+    a.href = url; a.download = "sideline-matches.json"; a.click(); setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
+  function stats() {
+    show("stats", `${W.currentTeam().name} statistics`);
+    const body = $("match-body"), teamId = W.currentTeam().id;
+    const label = node("label", "Season"), picker = node("select"); label.append(picker); body.append(label);
+    const names = [...new Set([...(seasons[teamId] || []), ...matches.filter((m) => m.teamId === teamId).map((m) => m.season)])];
+    for (const name of names) { const o = node("option", name); o.value = name; picker.append(o); }
+    const content = node("div"); body.append(content);
+    const draw = () => {
+      content.replaceChildren();
+      const list = matches.filter((m) => m.teamId === teamId && m.season === picker.value);
+      content.append(node("h3", "Season totals")); table(content, M.totals(list));
+      if (!list.length) content.append(node("p", "Completed matches will appear here."));
+      for (const m of list.slice().reverse()) {
+        const score = `${m.goals.filter((g) => g.playerId !== null).length}–${m.goals.filter((g) => g.playerId === null).length}`;
+        const d = node("details"), summary = node("summary", `${new Date(m.date).toLocaleDateString()} · ${m.opponent} · ${score}`); d.append(summary); table(d, M.totals([m])); content.append(d);
+        button(d, "Add missed goal", () => {
+          show("correction", "Add a missed goal");
+          const choices = [...m.roster, { id: null, name: "Opponent", number: "" }];
+          for (const p of choices) button($("match-body"), p.name, async () => { m.goals.push({ playerId: p.id, half: null, elapsed: null, corrected: true }); await persist(); stats(); });
+        });
+        m.goals.forEach((g, i) => button(d, `${g.playerId === null ? "Opponent" : m.roster.find((p) => p.id === g.playerId)?.name} goal · Remove`, async () => {
+          if (await W.confirm("Remove this goal from this game and season totals?", "Remove goal")) { m.goals.splice(i, 1); await persist(); draw(); }
+        }));
+      }
+    };
+    picker.onchange = draw; draw(); button(body, "Export match records", exportRecords);
+  }
+  $("open-match").onclick = setup; $("match-details").onclick = details; $("team-stats").onclick = stats;
+  $("match-close").onclick = () => $("matchDialog").close(); $("matchDialog").addEventListener("close", () => { dialogMode = null; });
+  $("cancel-sub").onclick = () => { pickedField = pickedBench = null; lastSwap = "Selection cancelled."; renderBench(); renderPitch(); };
+  $("match-goal").onclick = goals;
+  $("match-toggle").onclick = () => act(() => active.phase === "halftime" ? M.secondHalf(active) : M.toggle(active));
+  $("match-end").onclick = async () => {
+    if (!(await W.confirm(active.half === 1 ? "End the first half and pause all player timers?" : "End this match and save its statistics?", active.half === 1 ? "End of half" : "End match"))) return;
+    try {
+      M.endHalf(active);
+      if (active.phase === "finished") { matches.push(structuredClone(active)); active = null; }
+      await persist(); render();
+      if (!active) W.notice("Match saved. View it in Team → Game & season stats.");
+    } catch (e) { W.notice(e.message); }
+  };
+  $("match-pitch").addEventListener("click", (event)=>{
+    if (!active || !pitchState) return;
+    const canvas=$("match-pitch"), r=canvas.getBoundingClientRect(), rot=r.height>r.width;
+    const scale=Math.min(r.width/(rot?620:1000),r.height/(rot?1000:620));
+    const sx=(event.clientX-r.left-(r.width-(rot?620:1000)*scale)/2)/scale;
+    const sy=(event.clientY-r.top-(r.height-(rot?1000:620)*scale)/2)/scale;
+    const x=rot?1000-sy:sx, y=rot?sx:sy;
+    const player=pitchState.players.filter(p=>p.team===active.side).sort((a,b)=>Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y))[0];
+    if (player && Math.hypot(player.x-x,player.y-y)<46) { tap(player,true); renderPitch(); }
+  });
+  new ResizeObserver(renderPitch).observe($("match-pitch"));
+  window.SIDELINE_MATCH_UI = { get selectedRoster() { return pickedField == null ? null : active?.slots[pickedField]; }, tap, changed() {}, syncPlayers, refresh:render, get active() { return active; }, get syncing() { return false; }, flush: () => writing };
+  async function loadRecords() {
+    if (loaded) return;
+    try {
+      const saved = await S.run("workspace", "get", "matches");
+      if (saved) { active = saved.active; matches = saved.matches || []; seasons = saved.seasons || {}; }
+      loaded = true;
+      render();
+      setInterval(tick, 250);
+    } catch (e) { W.notice("Match records could not open. Reload before starting another match."); }
+  }
+  addEventListener("sideline-workspace-ready", loadRecords, { once: true });
+  if (W.ready) loadRecords();
+})();

@@ -1,0 +1,91 @@
+{
+  "kind": "sideline-team",
+  "version": 1,
+  "team": {
+    "id": "demo-review-team",
+    "name": "Demo United (review)",
+    "format": "9v9",
+    "formation": "3-3-2",
+    "color": "#ffcb54",
+    "roster": [
+      {
+        "id": "demo-1",
+        "name": "Player 1",
+        "number": 1,
+        "available": true
+      },
+      {
+        "id": "demo-2",
+        "name": "Player 2",
+        "number": 2,
+        "available": true
+      },
+      {
+        "id": "demo-3",
+        "name": "Player 3",
+        "number": 3,
+        "available": true
+      },
+      {
+        "id": "demo-4",
+        "name": "Player 4",
+        "number": 4,
+        "available": true
+      },
+      {
+        "id": "demo-5",
+        "name": "Player 5",
+        "number": 5,
+        "available": true
+      },
+      {
+        "id": "demo-6",
+        "name": "Player 6",
+        "number": 6,
+        "available": true
+      },
+      {
+        "id": "demo-7",
+        "name": "Player 7",
+        "number": 7,
+        "available": true
+      },
+      {
+        "id": "demo-8",
+        "name": "Player 8",
+        "number": 8,
+        "available": true
+      },
+      {
+        "id": "demo-9",
+        "name": "Player 9",
+        "number": 9,
+        "available": true
+      },
+      {
+        "id": "demo-10",
+        "name": "Player 10",
+        "number": 10,
+        "available": true
+      },
+      {
+        "id": "demo-11",
+        "name": "Player 11",
+        "number": 11,
+        "available": true
+      }
+    ],
+    "assignments": [
+      "demo-1",
+      "demo-2",
+      "demo-3",
+      "demo-4",
+      "demo-5",
+      "demo-6",
+      "demo-7",
+      "demo-8",
+      "demo-9"
+    ],
+    "shortHanded": false
+  }
+}

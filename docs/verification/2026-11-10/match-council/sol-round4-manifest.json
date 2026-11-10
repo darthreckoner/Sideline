@@ -1,0 +1,296 @@
+{
+  "origin": "http://127.0.0.1:56029/?preview=1",
+  "candidate": [
+    {
+      "file": "index.html",
+      "sha256": "1643029bb6b4b23d0ca560bf29549ba595d866f6bbac85eec0c5559994ac4c1d",
+      "servedMatch": true
+    },
+    {
+      "file": "./styles.css",
+      "sha256": "a57e0a983294fb96b6640ec21466481c84ffe0b5b62e1115d53cffd105c94909",
+      "servedMatch": true
+    },
+    {
+      "file": "./presets/soccer-field.js",
+      "sha256": "60e8f1d1a07851f0372eb35ec967e7a454cdb62f35d84ce01e7fd84389c26541",
+      "servedMatch": true
+    },
+    {
+      "file": "./presets/soccer-9v9.js",
+      "sha256": "58fcd75825d28d8834ebffb9c32eed7aa11ec3c7d40b71b768f970e738a3ce1f",
+      "servedMatch": true
+    },
+    {
+      "file": "./presets/soccer-7v7.js",
+      "sha256": "f68f4c9d903094ce5455ddd11c4e6ae4dd0dc7f4d71f5cb66afba055809c17fc",
+      "servedMatch": true
+    },
+    {
+      "file": "./data.js",
+      "sha256": "cfc5b68be412650df270594414439cee33a1194f779fe3de4b86bd9a412f72c4",
+      "servedMatch": true
+    },
+    {
+      "file": "./storage.js",
+      "sha256": "8ab504769b2700b55b43876e8b6591f661cf3fda89efc79d437b1e67e6b030f2",
+      "servedMatch": true
+    },
+    {
+      "file": "./coaching/situations.js",
+      "sha256": "8825abc59be3aabfad951bd7618c6b36649e3e9f9eae4a5f9cbc4c26f293db70",
+      "servedMatch": true
+    },
+    {
+      "file": "./app.js",
+      "sha256": "5fd920f4ff93d5c5b1fbc4655869b6f72731a7db655e2ebb601d9dc7a5892aab",
+      "servedMatch": true
+    },
+    {
+      "file": "./releases.js",
+      "sha256": "c85773ad54e1bf64effd14c4b0577a2689726323032b96d647641ed8f892eaf8",
+      "servedMatch": true
+    },
+    {
+      "file": "./release-notes.js",
+      "sha256": "b43444538a1829b31b86444c52ae1e00b7c35f94c777db4abe5f2df5bd1ba5a6",
+      "servedMatch": true
+    },
+    {
+      "file": "./match.js",
+      "sha256": "099186444475706689a075257445f8b024801ceb4193083cf8ced7f486d72e60",
+      "servedMatch": true
+    },
+    {
+      "file": "./workspace.js",
+      "sha256": "591092e38ac09a538bbc16420e5f4fddf29bc53124e70ef6cd10923e6e111c24",
+      "servedMatch": true
+    },
+    {
+      "file": "./match-ui.js",
+      "sha256": "100b3bdb064b15597f596f69b227f0840cbf093a2e33f579b7a0ead855b84826",
+      "servedMatch": true
+    },
+    {
+      "file": "tests/match-details.browser.cjs",
+      "sha256": "443331d608887d05ac3ddc0ca56970bc86d1a0eb9929749120bfdb9917f53898",
+      "servedMatch": true
+    },
+    {
+      "file": "tests/substitutions.browser.cjs",
+      "sha256": "5fa10a5b6b11cdc23e36d5e874fbef6a9b635b0f71c4288338c5eec3d61ec895",
+      "servedMatch": true
+    },
+    {
+      "file": "tests/match.browser.cjs",
+      "sha256": "33d2a6aa182af00708962eb7b746b6ee99ec397b35cd950e5d892b9ef4f69dc0",
+      "servedMatch": true
+    }
+  ],
+  "shots": [
+    {
+      "size": 1280,
+      "state": "ready",
+      "file": "1280-ready.png"
+    },
+    {
+      "size": 1280,
+      "state": "running",
+      "file": "1280-running.png"
+    },
+    {
+      "size": 1280,
+      "state": "goal-picker",
+      "file": "1280-goal-picker.png"
+    },
+    {
+      "size": 1280,
+      "state": "halftime",
+      "file": "1280-halftime.png"
+    },
+    {
+      "size": 1280,
+      "state": "selected",
+      "file": "1280-selected.png"
+    },
+    {
+      "size": 1280,
+      "state": "details-right",
+      "file": "1280-details-right.png"
+    },
+    {
+      "size": 390,
+      "state": "ready",
+      "file": "390-ready.png"
+    },
+    {
+      "size": 390,
+      "state": "running",
+      "file": "390-running.png"
+    },
+    {
+      "size": 390,
+      "state": "goal-picker",
+      "file": "390-goal-picker.png"
+    },
+    {
+      "size": 390,
+      "state": "halftime",
+      "file": "390-halftime.png"
+    },
+    {
+      "size": 390,
+      "state": "selected",
+      "file": "390-selected.png"
+    },
+    {
+      "size": 390,
+      "state": "details-right",
+      "file": "390-details-right.png"
+    },
+    {
+      "size": 320,
+      "state": "ready",
+      "file": "320-ready.png"
+    },
+    {
+      "size": 320,
+      "state": "running",
+      "file": "320-running.png"
+    },
+    {
+      "size": 320,
+      "state": "goal-picker",
+      "file": "320-goal-picker.png"
+    },
+    {
+      "size": 320,
+      "state": "halftime",
+      "file": "320-halftime.png"
+    },
+    {
+      "size": 320,
+      "state": "selected",
+      "file": "320-selected.png"
+    },
+    {
+      "size": 320,
+      "state": "details-right",
+      "file": "320-details-right.png"
+    }
+  ],
+  "geometry": [
+    {
+      "width": 1280,
+      "name": {
+        "x": 391,
+        "y": 196.640625,
+        "width": 140,
+        "height": 55,
+        "top": 196.640625,
+        "right": 531,
+        "bottom": 251.640625,
+        "left": 391
+      },
+      "goal": {
+        "x": 711,
+        "y": 159.140625,
+        "width": 90,
+        "height": 37.5,
+        "top": 159.140625,
+        "right": 801,
+        "bottom": 196.640625,
+        "left": 711
+      },
+      "box": {
+        "x": 391,
+        "y": 147.140625,
+        "width": 498,
+        "height": 497,
+        "top": 147.140625,
+        "right": 889,
+        "bottom": 644.140625,
+        "left": 391
+      },
+      "bg": "rgb(27, 39, 44)"
+    },
+    {
+      "width": 390,
+      "name": {
+        "x": 40,
+        "y": 192.640625,
+        "width": 140,
+        "height": 55,
+        "top": 192.640625,
+        "right": 180,
+        "bottom": 247.640625,
+        "left": 40
+      },
+      "goal": {
+        "x": 260,
+        "y": 155.140625,
+        "width": 90,
+        "height": 37.5,
+        "top": 155.140625,
+        "right": 350,
+        "bottom": 192.640625,
+        "left": 260
+      },
+      "box": {
+        "x": 40,
+        "y": 143.140625,
+        "width": 310,
+        "height": 497,
+        "top": 143.140625,
+        "right": 350,
+        "bottom": 640.140625,
+        "left": 40
+      },
+      "bg": "rgb(27, 39, 44)"
+    },
+    {
+      "width": 320,
+      "name": {
+        "x": 40,
+        "y": 181.515625,
+        "width": 140,
+        "height": 55,
+        "top": 181.515625,
+        "right": 180,
+        "bottom": 236.515625,
+        "left": 40
+      },
+      "goal": {
+        "x": 190,
+        "y": 144.015625,
+        "width": 90,
+        "height": 37.5,
+        "top": 144.015625,
+        "right": 280,
+        "bottom": 181.515625,
+        "left": 190
+      },
+      "box": {
+        "x": 40,
+        "y": 132.015625,
+        "width": 240,
+        "height": 497,
+        "top": 132.015625,
+        "right": 280,
+        "bottom": 629.015625,
+        "left": 40
+      },
+      "bg": "rgb(27, 39, 44)"
+    }
+  ],
+  "checks": [
+    "runtime served SHA256 equals source",
+    "background #11191d",
+    "ready/running/halftime/selected/details screenshots at all three viewports",
+    "long name and Goals visible at full-right scroll",
+    "sticky status at selected bench",
+    "grouped goal picker",
+    "shared phase label"
+  ],
+  "errors": []
+}
