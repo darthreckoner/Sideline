@@ -13,14 +13,13 @@ window.SIDELINE_RELEASES = [
     ],
   },
   {
-    version: "0.5.10",
+    version: "0.6.0",
     changes: [
-      "Scroll over the lineup field to reach the player list below it without getting stuck.",
-      "Edit player numbers in landscape with the number field and Apply button above the keyboard.",
+      "New Offside button: shades each team's offside zone from the last defender, and offside attackers pulse red as you move them.",
     ],
   },
   {
-    version: "0.6.0",
+    version: "0.7.0",
     changes: [
       "New Match tab: run the clock by half, track stoppage time, record goals and make substitutions while playing time is tracked for every player.",
       "See each player's minutes and goals by game and by season in Team → Game & season stats, and export match records.",
@@ -28,6 +27,8 @@ window.SIDELINE_RELEASES = [
       "Choose home and away kit colors for your team and opponent from a shared palette.",
       "Quick board setup sits at the top of Board, no roster needed. Set start is now Set position.",
       "A cleaner, calmer look: sharper match field, grouped Board menu, clearer buttons and icons in the bottom tabs.",
+      "Scroll over the lineup field to reach the player list below it without getting stuck.",
+      "Edit player numbers in landscape with the number field and Apply button above the keyboard.",
     ],
   },
 ];
