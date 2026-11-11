@@ -467,8 +467,9 @@ function drawShapeLines(c) {
   c.restore();
 }
 
-// opts.live = on-screen (shows selection); false for exported images.
-function contents(c, { rot = false, live = false } = {}) {
+// opts.live = the interactive board (shows its selection); false for previews and exported images.
+// opts.selectedRoster rings one roster player on the Match pitch.
+function contents(c, { rot = false, live = false, selectedRoster = null } = {}) {
   pitch(c);
   c.save();
   c.strokeStyle = "#d9f99d99"; c.lineWidth = 3; c.setLineDash([12, 10]);
@@ -499,7 +500,7 @@ function contents(c, { rot = false, live = false } = {}) {
     const fill = board.colors[p.team], style = markerStyle(p);
     const dark = isDark(fill);
     c.save(); c.globalAlpha = style.alpha;
-    if (live && window.SIDELINE_MATCH_UI?.selectedRoster === p.rosterId && p.rosterId) {
+    if (selectedRoster && p.rosterId === selectedRoster) {
       c.beginPath(); c.arc(p.x, p.y, style.radius + 13, 0, Math.PI * 2); c.lineWidth = 6; c.strokeStyle = "#ffcb54"; c.stroke();
     }
     if (offside.has(p.id)) drawOffsideRing(c, p, style.radius, live);
@@ -637,7 +638,6 @@ canvas.addEventListener("pointerdown", (e) => {
   } else if (mode === "pen") {
     gesture.ink = { type: "pen", points: [limit(p)] };
   } else if (mode === "erase") {
-    gesture.before = snapshot();
     eraseAt(p);
   }
   draw();
@@ -743,7 +743,6 @@ function handleTap(g) {
     return;
   }
   const player = g.target;
-  if (player && window.SIDELINE_MATCH_UI?.tap(player)) return;
   if (ballSelected) {
     ballSelected = false;
     if (player) giveBall(player, `${TEAM[player.team]} ${playerName(player)} has the ball.`);
@@ -1273,35 +1272,27 @@ $("show-lines").onclick = () => {
 $("lines-defense").onclick = () => selectShapeLines(true, "defense");
 $("lines-offense").onclick = () => selectShapeLines(true, "offense");
 
-function previewBoard(targetCanvas, value, matchView = false) {
+// match = { selectedRoster } fits the whole field to the canvas, turning it upright when the canvas is.
+function previewBoard(targetCanvas, value, match = null) {
   const previous = { board, preset, anim };
   try {
     board = value; preset = window.SIDELINE_PRESETS[value.format]; anim = null;
     const c = targetCanvas.getContext("2d");
     c.save(); c.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
-    if (matchView) {
+    if (match) {
       const rot = targetCanvas.height > targetCanvas.width;
       const fw = rot ? P.h : P.w, fh = rot ? P.w : P.h;
       const scale = Math.min(targetCanvas.width / fw, targetCanvas.height / fh);
       c.translate((targetCanvas.width - fw * scale) / 2, (targetCanvas.height - fh * scale) / 2);
       c.scale(scale, scale);
       if (rot) { c.translate(0, P.w); c.rotate(-Math.PI / 2); }
-      contents(c, {rot, live:true});
+      contents(c, { rot, selectedRoster: match.selectedRoster });
     } else { c.scale(targetCanvas.width / P.w, targetCanvas.height / P.h); contents(c); }
     c.restore();
   } finally { board = previous.board; preset = previous.preset; anim = previous.anim; }
 }
 
-function matchPlayers(side, slots, roster) {
-  // Match membership belongs to the match ledger, including after tactical Undo/Reset.
-  const markers = board.players.filter((p) => p.team === side);
-  for (let i = 0; i < markers.length; i++) {
-    const person = roster.find((p) => p.id === slots[i]);
-    if (person) Object.assign(markers[i], { rosterId: person.id, name: person.name, n: person.number, display: "number" });
-  }
-  draw();
-}
-window.SIDELINE_BOARD = { move() { cancelGesture(); setMode("move"); }, matchPlayers, snapshot, install: installSnapshot, openActivity, applyLineup, options: updateBoardOptions, preview: previewBoard, redraw: resize, cancel: cancelGesture, make: makeBoard, imageFile,
+window.SIDELINE_BOARD = { snapshot, install: installSnapshot, openActivity, applyLineup, options: updateBoardOptions, preview: previewBoard, redraw: resize, cancel: cancelGesture, make: makeBoard, imageFile,
   arrow(kind) { arrowKind = kind; $("arrow-pass").classList.toggle("on", kind === "pass"); $("arrow-run").classList.toggle("on", kind === "run"); $("arrow-pass").setAttribute("aria-pressed", String(kind === "pass")); $("arrow-run").setAttribute("aria-pressed", String(kind === "run")); },
 };
 $("arrow-pass").onclick = () => window.SIDELINE_BOARD.arrow("pass");

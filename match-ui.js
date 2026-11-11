@@ -5,7 +5,7 @@
   const $ = (id) => document.getElementById(id);
   const node = (tag, text) => { const n = document.createElement(tag); if (text != null) n.textContent = text; return n; };
   const fmt = (ms) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
-  let active = null, matches = [], seasons = {}, pickedField = null, pickedBench = null, writing = Promise.resolve(), syncing = false, loaded = false;
+  let active = null, matches = [], seasons = {}, pickedField = null, pickedBench = null, writing = Promise.resolve(), loaded = false;
   let dialogMode = null, benchSignature = null, fieldSignature = null, lastSwap = "";
   function persist() {
     const value = structuredClone({ key: "matches", active, matches, seasons });
@@ -61,21 +61,18 @@
     board.players = board.players.filter((p) => p.team === side);
     const ratio = Math.min(devicePixelRatio || 1, 3);
     canvas.width = Math.round(box.width * ratio); canvas.height = Math.round(box.height * ratio);
-    B.preview(canvas, board, true);
+    B.preview(canvas, board, { selectedRoster: pickedField == null ? null : active?.slots[pickedField] });
     $("match-context").textContent = active ? `${active.teamName} vs ${active.opponent}` : `${team.name} - current Team lineup`;
     const ownHome = !active || active.side === "home";
     $("match-team-name").textContent = ownHome ? team.name : active.opponent;
     $("match-opponent-name").textContent = ownHome ? active?.opponent || "Opponent" : team.name;
     $("match-team-name").style.setProperty("--team-color", board.colors.home);
     $("match-opponent-name").style.setProperty("--team-color", board.colors.away);
-
   }
-  function restoreBoard() { renderPitch(); }
-  function syncPlayers() { renderPitch(); }
   function setup() {
     if (!loaded) return W.notice("Opening match records…");
     if (active) return details();
-    const { team, markers, side, board } = context();
+    const { team, markers, board } = context();
     show("setup", "Match setup");
     if (!team.roster.length || !markers.length) { $("match-body").append(node("p", "Choose your starters in Team before starting a match.")); button($("match-body"), "Open Team", () => { $("matchDialog").close(); W.switchTab("team"); }); return; }
     $("match-body").append(node("p", team.name));
@@ -94,11 +91,8 @@
       try {
         const name = season.value.trim(); if (!name) throw Error("Name the season first.");
         window.SIDELINE_DATA.lineup(team, window.SIDELINE_PRESETS);
-        // Capture the selected Team lineup; subsequent Team edits do not change the match.
-        const roles = window.SIDELINE_PRESETS[board.format].formationPositions[board.formations?.[side] || board.formation];
-        const lineup = { ...team, format: board.format, formation: board.formations?.[side] || board.formation,
-          assignments: roles.map((role) => markers.find((p) => p.lineupSlot === roles.indexOf(role) || (p.lineupSlot == null && p.position === role))?.rosterId || null) };
-        const prepared = M.create({ id: window.SIDELINE_DATA.id(), team: lineup, side: venue.value, halfMinutes: Number(half.value), season: name, opponent: opponent.value.trim() || "Opponent" });
+        // create() copies the validated Team lineup; subsequent Team edits do not change the match.
+        const prepared = M.create({ id: window.SIDELINE_DATA.id(), team, side: venue.value, halfMinutes: Number(half.value), season: name, opponent: opponent.value.trim() || "Opponent" });
         prepared.color = ownColor.value;
         prepared.opponentColor = opponentColor.value;
         active = prepared; seasons[team.id] ||= []; if (!seasons[team.id].includes(name)) seasons[team.id].push(name);
@@ -136,14 +130,6 @@
     selection();
     renderPitch();
   }
-  function tap(player, matchTap = false) {
-    if (!matchTap) return false;
-    const { team, side, markers } = context();
-    if (!active && !team) return false;
-    if (player.team !== (active?.side || side) || !player.rosterId) return false;
-    chooseField(active ? active.slots.indexOf(player.rosterId) : markers.findIndex((p) => p.id === player.id));
-    return true;
-  }
   function renderBench() {
     const { team, markers } = context();
     const roster = active?.roster || team?.roster.filter((p) => p.available) || [];
@@ -175,7 +161,10 @@
     $("match-phase").textContent = phaseText();
     $("match-clock").textContent = `${active.half === 1 ? "1st" : "2nd"} ${fmt(c.main)}`;
     $("match-stoppage").textContent = c.stoppage || M.elapsed(active) >= active.halfMs ? `+${fmt(c.stoppage)}` : "";
-    if (dialogMode === "details" && $("matchDialog").open) for (const el of document.querySelectorAll("[data-player-time]")) el.textContent = fmt(M.times(active)[el.dataset.playerTime] || 0);
+    if (dialogMode === "details" && $("matchDialog").open) {
+      const times = M.times(active);
+      for (const el of document.querySelectorAll("[data-player-time]")) el.textContent = fmt(times[el.dataset.playerTime] || 0);
+    }
   }
   function render() {
     const hasStarters = context().markers.length > 0;
@@ -185,7 +174,7 @@
     $("match-prereq-text").textContent = hasStarters ? "Lineup ready. Add the opponent, kit colors and half length to get ready for kickoff." : "Choose your starters in Team first.";
     $("match-prereq").querySelector("button").hidden = hasStarters;
     document.querySelector(".match-layout").hidden = !active && !hasStarters;
-    syncPlayers(); renderBench();
+    renderPitch(); renderBench();
     $("open-match").hidden = !!active;
     for (const id of ["match-toggle", "match-end", "match-goal", "match-details"]) $(id).hidden = !active;
     if (!active) { $("match-phase").textContent = "Not started"; lastSwap = ""; pickedField = pickedBench = null; $("match-clock").textContent = $("match-stoppage").textContent = $("match-score").textContent = ""; return; }
@@ -233,12 +222,13 @@
     const a = node("a"), url = URL.createObjectURL(new Blob([JSON.stringify({ kind: "sideline-matches", version: 1, active, matches, seasons }, null, 2)], { type: "application/json" }));
     a.href = url; a.download = "sideline-matches.json"; a.click(); setTimeout(() => URL.revokeObjectURL(url), 10000);
   }
-  function stats() {
+  function stats(season) {
     show("stats", `${W.currentTeam().name} statistics`);
     const body = $("match-body"), teamId = W.currentTeam().id;
     const label = node("label", "Season"), picker = node("select"); label.append(picker); body.append(label);
     const names = [...new Set([...(seasons[teamId] || []), ...matches.filter((m) => m.teamId === teamId).map((m) => m.season)])];
     for (const name of names) { const o = node("option", name); o.value = name; picker.append(o); }
+    if (names.length) picker.value = names.includes(season) ? season : names.at(-1);
     const content = node("div"); body.append(content);
     const draw = () => {
       content.replaceChildren();
@@ -251,7 +241,7 @@
         button(d, "Add missed goal", () => {
           show("correction", "Add a missed goal");
           const choices = [...m.roster, { id: null, name: "Opponent", number: "" }];
-          for (const p of choices) button($("match-body"), p.name, async () => { m.goals.push({ playerId: p.id, half: null, elapsed: null, corrected: true }); await persist(); stats(); });
+          for (const p of choices) button($("match-body"), p.name, async () => { m.goals.push({ playerId: p.id, half: null, elapsed: null, corrected: true }); await persist(); stats(m.season); });
         });
         m.goals.forEach((g, i) => button(d, `${g.playerId === null ? "Opponent" : m.roster.find((p) => p.id === g.playerId)?.name} goal · Remove`, async () => {
           if (await W.confirm("Remove this goal from this game and season totals?", "Remove goal")) { m.goals.splice(i, 1); await persist(); draw(); }
@@ -264,7 +254,7 @@
     };
     picker.onchange = draw; draw(); button(body, "Export match records", exportRecords);
   }
-  $("open-match").onclick = setup; $("match-details").onclick = details; $("team-stats").onclick = stats;
+  $("open-match").onclick = setup; $("match-details").onclick = details; $("team-stats").onclick = () => stats();
   $("match-close").onclick = () => $("matchDialog").close(); $("matchDialog").addEventListener("close", () => { dialogMode = null; });
   $("cancel-sub").onclick = () => { pickedField = pickedBench = null; lastSwap = "Selection cancelled."; renderBench(); renderPitch(); };
   $("match-goal").onclick = goals;
@@ -280,16 +270,18 @@
   };
   $("match-pitch").addEventListener("click", (event)=>{
     if (!active || !pitchState) return;
-    const canvas=$("match-pitch"), r=canvas.getBoundingClientRect(), rot=r.height>r.width;
-    const scale=Math.min(r.width/(rot?620:1000),r.height/(rot?1000:620));
-    const sx=(event.clientX-r.left-(r.width-(rot?620:1000)*scale)/2)/scale;
-    const sy=(event.clientY-r.top-(r.height-(rot?1000:620)*scale)/2)/scale;
-    const x=rot?1000-sy:sx, y=rot?sx:sy;
-    const player=pitchState.players.filter(p=>p.team===active.side).sort((a,b)=>Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y))[0];
-    if (player && Math.hypot(player.x-x,player.y-y)<46) { tap(player,true); renderPitch(); }
+    // Inverse of the fitted, possibly upright field drawn by B.preview.
+    const field = window.SIDELINE_PRESETS[pitchState.format].field, canvas = $("match-pitch"), r = canvas.getBoundingClientRect(), rot = r.height > r.width;
+    const fw = rot ? field.height : field.width, fh = rot ? field.width : field.height;
+    const scale = Math.min(r.width / fw, r.height / fh);
+    const sx = (event.clientX - r.left - (r.width - fw * scale) / 2) / scale;
+    const sy = (event.clientY - r.top - (r.height - fh * scale) / 2) / scale;
+    const x = rot ? field.width - sy : sx, y = rot ? sx : sy;
+    const player = pitchState.players.sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))[0];
+    if (player && Math.hypot(player.x - x, player.y - y) < 46) chooseField(active.slots.indexOf(player.rosterId));
   });
   new ResizeObserver(renderPitch).observe($("match-pitch"));
-  window.SIDELINE_MATCH_UI = { get selectedRoster() { return pickedField == null ? null : active?.slots[pickedField]; }, tap, changed() {}, syncPlayers, refresh:render, get active() { return active; }, get syncing() { return false; }, flush: () => writing };
+  window.SIDELINE_MATCH_UI = { get selectedRoster() { return pickedField == null ? null : active?.slots[pickedField]; }, refresh: render, get active() { return active; }, flush: () => writing };
   async function loadRecords() {
     if (loaded) return;
     try {

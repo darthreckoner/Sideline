@@ -74,8 +74,8 @@
   document.querySelectorAll("[data-open-tab]").forEach((button) => button.onclick = () => switchTab(button.dataset.openTab));
   addEventListener("hashchange", () => { const tab = location.hash.slice(1); if (tab !== activeTab) switchTab(["board", "team", "match", "coaching"].includes(tab) ? tab : "board"); });
 
-  function updateCue() {
-    const state = B.snapshot().board, activity = situations.find((s) => s.id === state.activity?.id);
+  function updateCue(state = B.snapshot().board) {
+    const activity = situations.find((s) => s.id === state.activity?.id);
     el("activity-controls").hidden = !activity;
     if (!activity) return;
     el("active-lesson-title").textContent = `${activity.title} · ${activity.ages} · ${activity.size}`;
@@ -85,9 +85,9 @@
   }
   function boardChanged() {
     if (!ready) return;
-    window.SIDELINE_MATCH_UI?.changed();
-    updateCue();
-    const serial = JSON.stringify(B.snapshot());
+    const snapshot = B.snapshot();
+    updateCue(snapshot.board);
+    const serial = JSON.stringify(snapshot);
     if (serial === draftSerial) return;
     draftSerial = serial; storageStatus("Saving on this device…", false, "board");
     clearTimeout(draftTimer); draftTimer = setTimeout(() => persistDraft(serial), 250);

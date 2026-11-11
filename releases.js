@@ -43,4 +43,12 @@ window.SIDELINE_RELEASES = [
       "Buttons work again after turning your iPhone from sideways back to upright.",
     ],
   },
+  {
+    version: "0.7.3",
+    changes: [
+      "Game & season stats opens on your latest season and stays on it after you correct a goal.",
+      "A player picked on Match no longer shows a gold ring on Board.",
+      "A damaged import file now gets a clear message.",
+    ],
+  },
 ];

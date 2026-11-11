@@ -107,6 +107,10 @@ test("invalid imports fail completely without changing the active board", async 
   }
   assert.throws(() => D.readFile(JSON.stringify({ kind: "sideline-board", version: 999, snapshot: before }), presets), /version/);
   assert.throws(() => D.readFile(" ".repeat(2_000_001), presets), /2 MB/);
+  // Structurally broken files get a readable message instead of a raw script error.
+  for (const broken of ["null", JSON.stringify({ kind: "sideline-playbook", version: 1, boards: [null] }), JSON.stringify({ kind: "sideline-board", version: 1, snapshot: { board: { ...before.board, players: [null] } } })]) {
+    assert.throws(() => D.readFile(broken, presets), /not a valid Sideline file|not supported/);
+  }
 });
 
 test("lineup assignments swap stable identities and keep starters separate from available bench", () => {

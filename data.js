@@ -62,7 +62,13 @@
     if (typeof raw !== "string" || raw.length > 2_000_000) fail("Choose a Sideline file smaller than 2 MB.");
     let doc;
     try { doc = JSON.parse(raw); } catch { fail("This file is not valid JSON."); }
-    if (doc.version !== 1) fail("This file version is not supported by this Sideline release.");
+    // Malformed entries are rejected with a readable message, not a raw script error.
+    try { return readDocument(doc, presets); }
+    catch (error) { if (error instanceof TypeError) fail("This is not a valid Sideline file."); throw error; }
+  }
+
+  function readDocument(doc, presets) {
+    if (!doc || doc.version !== 1) fail("This file version is not supported by this Sideline release.");
     if (doc.kind === "sideline-board") return { kind: doc.kind, name: text(doc.name, 80) ? doc.name : "Imported board", snapshot: readSnapshot(doc.snapshot, presets) };
     if (doc.kind === "sideline-playbook") {
       if (!Array.isArray(doc.boards) || doc.boards.length > 100) fail("A playbook can import at most 100 boards at once.");

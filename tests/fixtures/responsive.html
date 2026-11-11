@@ -10,7 +10,7 @@
   const params = new URLSearchParams(location.search);
   const sizes = { phone: [375, 667], landscape: [667, 375], tablet: [1024, 768] };
   const size = sizes[params.get("size")] || sizes.phone;
-  const view = ["board", "coaching", "team"].includes(params.get("view")) ? params.get("view") : "board";
+  const view = ["board", "team", "match", "coaching"].includes(params.get("view")) ? params.get("view") : "board";
   document.getElementById("title").textContent = `${view} · ${size[0]} × ${size[1]}`;
   const frame = document.getElementById("preview"); frame.width = size[0]; frame.height = size[1]; frame.src = `../../?preview=1#${view}`;
   const scale = Math.min(1, (innerWidth - 16) / size[0], (innerHeight - 36) / size[1]);

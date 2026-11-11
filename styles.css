@@ -172,7 +172,7 @@ dialog p { color: #d0dfd6; font-size: 14px; line-height: 1.45; margin: 8px 0; }
 }
 
 .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.seg button, .formation-controls button, .formation-controls select, .menu-actions button, .menu-actions a, .slot button, .wide {
+.seg button, .formation-controls button, .formation-controls select, .menu-actions button, .menu-actions a, .wide {
   min-height: 44px;
   border: 0;
   border-radius: 10px;
@@ -208,19 +208,6 @@ button:focus-visible, select:focus-visible { outline: 3px solid var(--accent); o
 
 .primary.wide, .wide { width: 100%; margin-top: 8px; }
 .primary.wide { background: var(--accent); color: var(--accent-ink); }
-
-.slot {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-top: 1px solid #3f6454;
-  padding: 9px 0;
-}
-.slot > div { flex: 1; min-width: 0; }
-.slot strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.slot small { color: var(--muted); }
-.slot button { padding: 0 14px; font-size: 14px; }
-.slot button.delete { background: transparent; color: #ffb4a8; }
 
 /* A compact player menu stays beside the held marker and within the visible screen. */
 .player-menu {
@@ -265,7 +252,6 @@ button:focus-visible, select:focus-visible { outline: 3px solid var(--accent); o
 .board-workspace { display: flex; min-width: 0; min-height: 0; gap: 6px; }
 .app-tabs { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid #3b6252; background: var(--bg); }
 .app-tabs button { border: 0; background: transparent; border-radius: 9px; color: var(--muted); font-size: 12px; font-weight: 700; display: flex; gap: 7px; align-items: center; justify-content: center; }
-.app-tabs button span { font-size: 23px; line-height: 1; }
 .app-tabs [aria-selected="true"] { color: var(--accent); background: var(--panel); box-shadow: inset 0 -3px var(--accent); }
 .workspace { min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 18px max(14px, calc((100% - 1200px) / 2)); touch-action: pan-y; }
 .workspace h1 { font-size: clamp(26px, 4vw, 36px); margin: 0; letter-spacing: -.025em; }
@@ -304,7 +290,6 @@ details .settings-grid { margin-top: 14px; }
 .situation-card canvas { position: static; width: 100%; height: 180px; object-fit: contain; background: #1c6749; border-radius: 9px; }
 .situation-card .question { color: var(--accent); font-weight: 650; }
 .situation-card .button-row > button { flex: 1; }
-.situation-card details { margin-top: 12px; }
 .empty-state { color: var(--muted); padding: 30px 10px; text-align: center; border: 1px dashed #4f7a66; border-radius: 12px; }
 .visibility-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap: 9px; }
 .check-label, .visibility-list label { display: flex; align-items: center; gap: 7px; min-height: 36px; }
@@ -377,12 +362,10 @@ a { color: var(--accent); }
   .shape-team { font-size: 10px; }
   .shape-team select { width: 67px; padding-right: 12px; font-size: 11px; }
 }
-@media (max-height: 430px) and (orientation: landscape) { #app { grid-template-rows: minmax(0, 1fr) 44px; } .app-tabs button { font-size: 11px; } .app-tabs button span { font-size: 18px; } .rail { grid-auto-rows: 44px; } .lesson-cue { width: min(360px, calc(100% - 16px)); } }
+@media (max-height: 430px) and (orientation: landscape) { #app { grid-template-rows: minmax(0, 1fr) 44px; } .app-tabs button { font-size: 11px; } .rail { grid-auto-rows: 44px; } .lesson-cue { width: min(360px, calc(100% - 16px)); } }
 
 /* Match controls remain outside the pitch and scroll when space is limited. */
 .app-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.home-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 25px; }
-.home-actions button { min-height: 120px; font-size: 20px; }
 .match-strip { display: flex; align-items: center; gap: 5px; overflow-x: auto; flex: 0 0 auto; min-height: 40px; }
 .match-strip button, #sideline button { min-height: 40px; background: var(--panel); border: 1px solid #4f7a66; border-radius: 8px; padding: 5px 9px; font: inherit; font-size: 12px; color: var(--ink); flex-shrink: 0; }
 .match-strip span { white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 700; }
@@ -415,7 +398,6 @@ dialog { background: #1b272c; border-color: #4b626b; padding: 20px; }
 dialog p, .release-section ul { color: #c4d1d4; }
 .app-tabs { border-color: #34434a; gap: 4px; }
 .app-tabs button { font-weight: 600; }
-.app-tabs button span { width: 24px; text-align: center; font-size: 21px; }
 .app-tabs [aria-selected="true"] { background: #23352f; box-shadow: inset 0 -2px var(--accent); }
 h1:focus { outline: none; }
 h1:focus-visible { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 6px; }
@@ -433,12 +415,6 @@ h1:focus-visible { text-decoration: underline; text-decoration-color: var(--acce
 #match-score { color: #dceae5; }
 #match-body > button { margin: 8px 6px 0 0; }
 
-.home-actions { grid-template-columns: repeat(2, minmax(0,1fr)); max-width: 850px; gap: 16px; }
-.home-actions button { min-height: 150px; text-align: left; padding: 24px; font-size: 22px; border-radius: 16px; }
-.home-actions button:first-child { background: #29483e; border-color: #668a80; }
-.home-actions button::after { content: '\2192'; float: right; color: var(--accent); }
-.team-management { margin-top: 20px; }
-.team-management > details { margin-top: 16px; }
 #coaching-view .teaching-aids { padding: 10px 14px; }
 #coaching-view .teaching-aids summary { min-height: 24px; }
 #coaching-view .teaching-aids summary span { display: inline; margin-left: 10px; }
@@ -452,8 +428,6 @@ h1:focus-visible { text-decoration: underline; text-decoration-color: var(--acce
   .page-heading { margin-bottom: 16px; }
   .page-heading h1 { font-size: 28px; }
   .team-picker { margin: 8px 0 16px; }
-  .home-actions { gap: 10px; margin-top: 24px; }
-  .home-actions button { min-height: 130px; font-size: 17px; padding: 16px; }
   #coaching-view .page-heading > div > p:not(.eyebrow) { display: none; }
   #coaching-view .subnav { margin-bottom: 10px; }
   #coaching-view .teaching-aids { margin-bottom: 10px; }
@@ -478,9 +452,6 @@ h1:focus-visible { text-decoration: underline; text-decoration-color: var(--acce
   .rail button { font-size: 11px; }
 }
 
-/* Reserve space for card arrows independently of label wrapping. */
-.home-actions button { position: relative; padding-right: 48px; }
-.home-actions button::after { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); float: none; }
 @media (max-width: 600px) {
   .lineup-slots { grid-template-columns: minmax(0, 1fr); }
   #coaching-view .page-heading { margin-bottom: 8px; }
@@ -503,11 +474,8 @@ h1:focus-visible { text-decoration: underline; text-decoration-color: var(--acce
 
 .rail button i svg { width: 20px; height: 20px; display: block; }
 
-.board-scroll-hint { display: none; }
 @media (orientation: portrait) and (max-height: 700px) {
-  .board-scroll-hint { display: block; font-size: 11px; color: var(--muted); margin: 5px 4px 8px; }
   .board-workspace { scrollbar-color: #496067 transparent; }
-  .home-actions button { font-size: 16px; padding-left: 13px; }
 }
 
 /* Wide boards use one toolbar instead of two mostly empty rows. */
@@ -519,7 +487,6 @@ h1:focus-visible { text-decoration: underline; text-decoration-color: var(--acce
     background: var(--panel); border-radius: 10px;
   }
   .board-toolbar .shape-controls { flex: 0 0 auto; padding: 0; margin: 0; }
-  .board-toolbar .match-strip { flex: 0 1 auto; justify-content: flex-end; background: transparent; padding: 0; margin: 0; }
 }
 
 /* Match has a dedicated pitch and no teaching controls. */
@@ -527,7 +494,6 @@ h1:focus-visible { text-decoration: underline; text-decoration-color: var(--acce
 .match-stage { display: flex; align-items: stretch; gap: 12px; margin-top: 12px; }
 .match-controls { flex: 0 0 320px; min-width: 0; align-self: flex-start; }
 .match-controls .page-heading { margin-bottom: 12px; }
-.match-controls .match-strip { position: static; }
 .match-controls #match-prereq { margin-top: 10px; }
 .match-stage > .match-layout { flex: 1 1 auto; min-width: 0; margin-top: 0; }
 .match-stage .match-pitch { height: min(72vh, 720px); }
@@ -812,7 +778,6 @@ dialog .pick-opponent button { width: 100%; text-align: left; border-left: 6px s
 
 /* Round 3 refinements */
 .toast.show { transform: translateY(0); }
-.board-scroll-hint { display: none !important; }
 @media (max-width: 899px) { #team-view[data-section="lineup"] .team-columns > #lineup-panel { margin-top: 0; padding-top: 0; border-top: 0; } }
 .situation-card .button-row { align-items: stretch; }
 #match-view #match-goal:disabled { border: 1px solid var(--line); color: var(--muted); opacity: .55; }

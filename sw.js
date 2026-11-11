@@ -1,12 +1,14 @@
 // Cache each release as a complete set so HTML, scripts and presets stay compatible.
 // An updated worker waits until existing Sideline windows close before taking over.
-const CACHE = "sideline-v0.7.2";
+const CACHE = "sideline-v0.7.3";
 const FILES = [
   "./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest",
   "./presets/soccer-field.js", "./presets/soccer-9v9.js", "./presets/soccer-7v7.js",
   "./data.js", "./storage.js", "./coaching/situations.js", "./releases.js", "./release-notes.js", "./workspace.js", "./match.js", "./match-ui.js",
   "./icons/icon-192.png", "./icons/icon-512.png",
 ];
+
+const SHELL = new Set(FILES.map((file) => new URL(file, self.registration.scope).href));
 
 self.addEventListener("install", (e) => {
   // Bypass the HTTP cache as well as the previous worker's cache. Otherwise a new
@@ -26,10 +28,9 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   const url = new URL(req.url);
-  const shell = new Set(FILES.map((file) => new URL(file, self.registration.scope).href));
   url.search = "";
   url.hash = "";
-  if (req.method !== "GET" || !shell.has(url.href)) return;
+  if (req.method !== "GET" || !SHELL.has(url.href)) return;
   e.respondWith(
     caches.open(CACHE).then(async (cache) => {
       const cached = await cache.match(url.href, { ignoreSearch: true });

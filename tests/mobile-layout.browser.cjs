@@ -184,7 +184,7 @@ async function run() {
       try {
         await page.reload();
         await page.waitForFunction(() => document.getElementById("save-status").textContent === "Saved on this device");
-        assert.equal(await page.evaluate(() => window.SIDELINE_RELEASES.at(-1).version), "0.7.2");
+        assert.equal(await page.evaluate(() => window.SIDELINE_RELEASES.at(-1).version), "0.7.3");
         assert.equal(await page.evaluate(() => window.SIDELINE_BOARD.snapshot().board.players[0].n), 29);
         await page.setViewportSize({ width: 390, height: 700 });
         await page.locator("#tab-team").click();

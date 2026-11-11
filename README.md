@@ -1,18 +1,19 @@
-# Sideline v0.5: youth soccer coaching board
+# Sideline: youth soccer coaching board
 
-Sideline is a soccer whiteboard for iPhone, iPad and desktop. Use it to show your players where to move and pass, then take the idea onto the field. It works offline after setup and doesn't need an account. The board starts at 9v9; you can choose 7v7 under Team → Quick board setup. The published app is at [Sideline](https://darthreckoner.github.io/Sideline/); the deployment record is in [verification](docs/verification/2026-10-26/README.md).
+Sideline is a soccer whiteboard for iPhone, iPad and desktop. Use it to show your players where to move and pass, then take the idea onto the field. It works offline after setup and doesn't need an account. The board starts at 9v9; you can choose 7v7 under Board → Quick board setup. The published app is at [Sideline](https://darthreckoner.github.io/Sideline/); the deployment record is in [verification](docs/verification/2026-10-26/README.md).
 
-Arrange the players, tap Set position, and show the play. Tap Reset to show it again. Coaching has activity ideas and your saved boards. Team is where you can build a roster and plan lineups. Everything stays on your device unless you export or share it. Accounts, subscriptions, cloud sync, AI and animation timelines are outside this release.
+Arrange the players, tap Set position, and show the play. Tap Reset to show it again. Coaching has activity ideas and your saved boards. Team is where you can build a roster and plan lineups. Match runs the game clock, substitutions, goals and playing time. Everything stays on your device unless you export or share it. Accounts, subscriptions, cloud sync, AI and animation timelines are outside this release.
 
-The [soccer coaching plan](SOCCER_PLAN.md) and [team setup plan](TEAM_PLAN.md) describe the design. The [earlier screen concepts](docs/design/soccer-tabs/README.md) are design references. Current verification is recorded in [v0.5 checks](docs/verification/2026-10-26/README.md).
+The [soccer coaching plan](SOCCER_PLAN.md) and [team setup plan](TEAM_PLAN.md) describe the design. The [earlier screen concepts](docs/design/soccer-tabs/README.md) are design references. Verification records are kept by date under [docs/verification](docs/verification/); the most recent is [2026-11-10](docs/verification/2026-11-10/README.md).
 
 The five activity boards are Sideline illustrations based on FIFA youth lessons. Each shows the published ages and group size, with a link to the original lesson and an explanation of what the board leaves out. They aren't complete practices, and no FIFA endorsement is claimed. Independent youth-coach review and physical-device acceptance are still pending. Starting-shape, prescribed-triangle and goalkeeper-build-out lessons aren't included; FA candidates also remain outside this pack pending separate reuse and link handling. See the [content standard](docs/COACHING_CONTENT_STANDARD.md) and [source notes](docs/research/IMPLEMENTATION_SOURCE_NOTES.md).
 
-## The three tabs
+## The four tabs
 
 - **Board** is where you move players, pass, draw, save and share a picture.
 - **Coaching** has five activities you can filter by age and topic, plus guides for the board and My playbook for saved boards. You can search, favorite, rename, copy, delete and export saved boards.
-- **Team** lets you set up a board without a roster, or keep named teams, mark who's available, choose starters and save lineups. Once you've assigned a goalkeeper, you can leave other positions empty for a short-handed lineup. You can also copy, export or import teams.
+- **Team** keeps named teams: mark who's available, choose starters and save lineups. Once you've assigned a goalkeeper, you can leave other positions empty for a short-handed lineup. You can also copy, export or import teams, and review game and season stats.
+- **Match** runs a game: clock by half with stoppage time, substitutions, goals and playing time for every player.
 
 Switching tabs keeps your board and undo history. Opening an activity or applying a lineup can be undone, even if it changes the field format. An activity keeps the group size from its source. For example, a 2v1 stays a 2v1 on the 9v9 board. T marks a target player; OFF marks the first defender who has stopped in the U-10 activity. The board shows an idea to discuss, so players still need to try the activity on the field.
 
@@ -26,7 +27,7 @@ python3 -m http.server 8080   # from this folder
 
 Or just double-click `index.html` — it works straight from disk. Open `http://localhost:8080` if serving. On a real iPhone it must be served over **HTTPS** (any static host — Netlify, GitHub Pages, Cloudflare Pages) for offline mode and Add to Home Screen.
 
-For local browser development use `http://localhost:8080/?preview=1`; on loopback hosts this skips new service-worker registration. Use an otherwise-unused origin for that preview so an older installed worker cannot mask changes. The normal URL still installs the offline shell. `#board`, `#coaching` and `#team` open individual workspaces.
+For local browser development use `http://localhost:8080/?preview=1`; on loopback hosts this skips new service-worker registration. Use an otherwise-unused origin for that preview so an older installed worker cannot mask changes. The normal URL still installs the offline shell. `#board`, `#team`, `#match` and `#coaching` open individual workspaces.
 
 ## GitHub Pages
 
@@ -76,7 +77,7 @@ Offense draws triangles among the visible players on your team. A triangle needs
 
 ### Choose a formation or lineup
 
-In Team → Quick board setup, choose Home, Away or both and pick a formation. The 9v9 choices are 3-3-2 and 3-2-3; the 7v7 choices are 2-3-1 and 3-2-1. Reset both teams puts the players back in their default positions and labels, keeps the colors, and clears drawings and the saved starting point. Undo brings the previous board back.
+On Board, tap Quick board setup, choose Home, Away or both and pick a formation. The 9v9 choices are 3-3-2 and 3-2-3; the 7v7 choices are 2-3-1 and 3-2-1. Reset both teams puts the players back in their default positions and labels, keeps the colors, and clears drawings and the saved starting point. Undo brings the previous board back.
 
 To use a roster, add your players in Team, check who's available, and choose the starters. Check the lineup preview and tap Apply to board. Team edits alone don't change the board. After applying a lineup, tap Set position on the board if you want to demonstrate a play.
 
@@ -118,6 +119,7 @@ Label edits are included in saved boards, starting points and PNGs. Older saved 
 
 - `index.html`, `styles.css`, `app.js` — the app
 - `workspace.js`, `data.js`, `storage.js` — workspaces, board/team validation and transactional local storage
+- `match.js`, `match-ui.js` — match clock and playing-time rules, and the Match tab that uses them
 - `releases.js`, `release-notes.js` — release notes, dismissal and the feedback email link
 - `coaching/situations.js` — verified FIFA reference metadata and original practice schematics
 - `presets/soccer-field.js` — soccer-only field renderer
@@ -132,27 +134,24 @@ Add the new preset and renderer scripts to `index.html` and the offline file lis
 
 ## Verification
 
-Run `node --test tests/*.test.cjs` for board, data, release-note and offline-shell checks. The suite covers the existing gestures and labels plus native activity counts, source references, snapshots and import rejection, team identity/copies, assignment rules, bench/availability, cross-format Undo, hidden possession, inverse coordinates, transaction aborts, release dismissals and complete offline assets. Browser checks and screenshots are in the verification record. These do not establish real-device touch, teaching effectiveness or iOS acceptance.
+Run `node --test tests/*.test.cjs` for board, data, match, release-note and offline-shell checks. The `tests/*.browser.cjs` workflows run one at a time with `node` and need the `playwright` package plus an installed Chrome; the package is not part of this repository. The suite covers the existing gestures and labels plus native activity counts, source references, snapshots and import rejection, team identity/copies, assignment rules, bench/availability, cross-format Undo, hidden possession, inverse coordinates, transaction aborts, release dismissals and complete offline assets. Browser checks and screenshots are in the verification record. These do not establish real-device touch, teaching effectiveness or iOS acceptance.
 
 ## Still to test on a real iPhone
 
 Outdoors in sunlight, one-handed: open, pass, drag, Set position, Reset — under 30 seconds. Hold a player, change Pos / #, and verify quick taps and drags do not open its menu. Check all four tabs, roster typing and lineup assignment, the save dialog, recovered draft, native board/team-file sharing and imports, Home Screen install, offline relaunch and PNG → Messages. Test a service-worker update with existing saves, the What's new dismissal across relaunches, and the feedback email draft. Independent youth-coach review and on-field teaching checks are separate from these device checks.
 
-## Local match tracking (v0.6.0, pending review)
+## Match tracking
 
-Home opens the landing screen without stopping your match or discarding your board. Use Default board there for the standard formation or the optional starting lineup saved from Team. Open board resumes your existing board.
+Match is its own tab with its own field. Once a match is prepared, later Board or Team edits don't change it, and the clock and lineup survive tab switches and reloads.
 
-Apply a saved team's lineup, then choose Match setup on the board. Set the opponent, named season, and half length (1?90 minutes). Prepare match, then Begin first half. The count-up clock stops at the regulation half boundary while a separate stoppage counter continues until End of half. Begin second half resumes regulation time at that boundary. End match saves the game under Team ? Game & season stats. Pause stops all player timers; navigation and reload do not pause a running match. Player time includes stoppage but excludes halftime and manual pauses.
+Choose your starters in Team, then tap Set up match on Match. Enter the opponent, whether you play home or away, the kit colors, the minutes per half (1–90) and a season name. Tap Prepare match, then Begin first half. The clock counts up and stops at the end of regulation while a separate stoppage counter continues until End of half. Begin second half resumes at that boundary. End match saves the game under Team → Game & season stats. Pause stops all player timers. Player time includes stoppage but excludes halftime and pauses.
 
-Available substitutes sit beside the pitch. In Move mode, tap an on-field player and then a substitute (or the reverse) to swap them. The selected field player gets a gold ring. Cancel clears the selection. In a match, the outgoing timer stops and the incoming timer starts immediately. Tactical Reset and Undo cannot undo a recorded substitution. Finish or discard the match before opening a different board or changing formation. Tap the ball first when you want to pass while a roster is applied.
+Substitutes are listed beside the field, or below it on an upright phone. Tap an on-field player and then a substitute (or the reverse) to swap them; tap two on-field players to swap their positions. The selected player gets a gold ring, and Cancel clears the selection. Substitutions work before kickoff and during play: the outgoing timer stops and the incoming timer starts immediately.
 
-Goal opens scorer selection and includes Opponent goal. Details shows current player times and lets you remove an incorrectly recorded goal. Completed match stats and season totals stay attached to the saved team's identity even if you later edit its roster. Export match records downloads a separate JSON record of the ledger; keep that file as a backup. Match-record import is not provided in this release.
+Goal opens the scorer list and includes Opponent goal. Details shows current player times and lets you remove an incorrectly recorded goal, export match records or discard the match. In Team → Game & season stats you can review each season, add a missed goal, remove a goal or delete a finished match. Completed stats stay attached to the saved team even if you later edit its roster. Export match records downloads a separate JSON file; keep it as a backup. Match-record import is not provided.
 
-Opening a saved play establishes its reset position. Set position changes the reset point for the current session, including recovered drafts, without changing the playbook record. Reopening the saved play restores its saved position. Save explicitly asks ?Overwrite existing play?? before updating an opened play, followed by ?Play updated?. Use Copy in the playbook to create a separate play.
+## Saved plays and the default board
 
-Review build remains local. No publication is authorized until local review and approval of the complete What's new card.
+Opening a saved play establishes its reset position. Set position changes the reset point for the current session, including recovered drafts, without changing the playbook record. Reopening the saved play restores its saved position. Save asks "Overwrite existing play?" before updating an opened play. Use Copy in the playbook to create a separate play.
 
-
-## Board, Team, Match and Coaching
-
-Board is the landing screen, recovering the existing board draft or opening its default formation. The four tabs remain visible at the bottom. Board holds teaching, drawing and demonstration tools. Team prepares rosters and lineups. Match setup captures the selected Team lineup into a separate match pitch, with score, halves, clock, substitutions, goals and statistics. Later teaching-board or Team edits do not alter an active match. The clock and match roster survive switching tabs and reloads. Coaching holds lessons and the playbook. Board menu > Default board restores the configured default lineup or formation.
+Board is the landing screen and recovers your last board draft. Board → Menu → Default board restores the standard formation, or the starting lineup you saved under Team → Board default.
