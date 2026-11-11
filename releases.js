@@ -37,4 +37,10 @@ window.SIDELINE_RELEASES = [
       "Match fits your phone turned sideways: a compact scoreboard and the whole field on screen.",
     ],
   },
+  {
+    version: "0.7.2",
+    changes: [
+      "Buttons work again after turning your iPhone from sideways back to upright.",
+    ],
+  },
 ];

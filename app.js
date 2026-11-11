@@ -1157,6 +1157,24 @@ $("install").onclick = async () => {
 };
 
 document.addEventListener("gesturestart", (e) => e.preventDefault()); // block iOS pinch-zoom
+
+// iOS can leave the page nudged out of place after a rotation, so taps miss every
+// button while scrolling still works. Put the page back and relayout once settled.
+function settleAfterRotation() {
+  requestAnimationFrame(() => {
+    window.scrollTo(0, 0);
+    const app = $("app");
+    app.style.transform = "translateZ(0)";
+    void app.offsetHeight;
+    app.style.transform = "";
+  });
+}
+let lastPortrait = matchMedia("(orientation: portrait)").matches;
+addEventListener("orientationchange", () => setTimeout(settleAfterRotation, 250));
+addEventListener("resize", () => {
+  const portrait = matchMedia("(orientation: portrait)").matches;
+  if (portrait !== lastPortrait) { lastPortrait = portrait; cancelGesture(); settleAfterRotation(); }
+});
 new ResizeObserver(resize).observe(canvas);
 
 function installSnapshot(next, message = "Board opened. Undo restores the previous board.", recordHistory = true) {

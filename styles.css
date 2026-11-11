@@ -24,8 +24,10 @@ html, body {
   -webkit-touch-callout: none;
 }
 
+/* Absolute, not fixed: after rotating, iOS home-screen apps can keep a fixed
+   root's sideways tap targets, so the page scrolls but nothing can be tapped. */
 #app {
-  position: fixed;
+  position: absolute;
   inset: 0;
   display: flex;
   gap: 6px;
