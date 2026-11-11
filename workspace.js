@@ -272,7 +272,7 @@
     for (const player of team.roster) {
       const row = create("div", "roster-row"), available = create("input"); available.type = "checkbox"; available.checked = player.available; available.setAttribute("aria-label", `${player.name} available for this lineup`);
       available.onchange = () => { player.available = available.checked; team.activeLineup = ""; if (!player.available) team.assignments = team.assignments.map((pid) => pid === player.id ? null : pid); renderTeam(); scheduleTeamSave(); };
-      const person = create("div", "person"); person.append(create("strong", "", `#${player.number} ${player.name}`), create("small", "", `${!player.available ? "Unavailable" : assigned.has(player.id) ? "Starting" : "Bench"}${player.role ? " · Try " + player.role : ""}`));
+      const person = create("div", "person"); person.append(create("strong", "", `#${player.number} ${player.name}`), create("small", `status ${!player.available ? "out" : assigned.has(player.id) ? "starting" : "bench"}`, `${!player.available ? "Unavailable" : assigned.has(player.id) ? "Starting" : "Bench"}${player.role ? " · Try " + player.role : ""}`));
       const edit = create("button", "", "Edit"); edit.setAttribute("aria-label", `Edit ${player.name}`); edit.onclick = () => openPlayer(player);
       const remove = create("button", "delete", "Remove"); remove.setAttribute("aria-label", `Remove ${player.name}`);
       remove.onclick = async () => { if (await confirmChange(`Remove ${player.name} from this team? Your saved boards won't change.`, "Remove player")) { team.roster = team.roster.filter((p) => p.id !== player.id); team.assignments = team.assignments.map((pid) => pid === player.id ? null : pid); for (const saved of team.lineups || []) { saved.assignments = saved.assignments.map((pid) => pid === player.id ? null : pid); saved.available = saved.available.filter((pid) => pid !== player.id); } team.activeLineup = ""; renderTeam(); scheduleTeamSave(); } };
@@ -335,7 +335,7 @@
   el("short-handed").onchange = () => { currentTeam().shortHanded = el("short-handed").checked; currentTeam().activeLineup = ""; scheduleTeamSave(); };
   for (const section of ["roster", "lineup"]) el(`team-${section}-tab`).onclick = () => {
     el("team-view").dataset.section = section;
-    el(`${section}-panel`).scrollIntoView({ block: "start" });
+    el(`team-${section}-tab`).parentElement.scrollIntoView({ block: "start" });
     for (const name of ["roster", "lineup"]) { el(`team-${name}-tab`).classList.toggle("on", name === section); el(`team-${name}-tab`).setAttribute("aria-pressed", String(name === section)); }
   };
   function openPlayer(player) {
@@ -398,6 +398,8 @@
     el("default-lineup-status").textContent = defaultLineup ? `${defaultLineup.name} is the default board.` : "Default board uses the standard formation.";
     ready = true; draftSerial = JSON.stringify(B.snapshot());
     const requested = location.hash.slice(1); switchTab(["board", "team", "match", "coaching"].includes(requested) ? requested : "board", false);
+    // "#board" also names the field canvas; undo the browser's fragment scroll so the header stays in view.
+    el("board-view").scrollTop = 0;
     window.SIDELINE_RELEASE_NOTES.start();
     dispatchEvent(new Event("sideline-workspace-ready"));
   })().catch((error) => { console.error(error); notice("A workspace could not open. Your existing local saves have not been removed."); });

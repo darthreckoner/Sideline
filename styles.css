@@ -419,8 +419,6 @@ h1:focus-visible { text-decoration: underline; text-decoration-color: var(--acce
 .rail button { border: 1px solid #2e4149; font-size: 11.5px; font-weight: 600; border-radius: 9px; }
 .rail button.primary { background: var(--panel); color: var(--ink); }
 .rail button i { font-size: 19px; }
-.rail #capture, .rail #reset-start { border-top: 3px solid #668a80; }
-.rail #save, .rail #share { border-bottom: 3px solid #49616c; }
 .shape-controls button, .shape-controls select, .match-strip button, #sideline button { border-color: #42565d; }
 .shape-controls { padding-bottom: 3px; }
 .match-strip { background: #1b272c; border-radius: 9px; padding: 4px; gap: 10px; }
@@ -672,3 +670,165 @@ dialog .custom-kit-color { display: flex; align-items: center; gap: 10px; margin
   .saved-lineup-controls { flex-wrap: wrap; }
   .saved-lineup-controls label { flex-basis: 100%; }
 }
+
+/* ============================================================
+   Visual polish layer: one button system, quieter chrome,
+   readable Match on every phone. Later rules win on purpose.
+   ============================================================ */
+:root { --muted: #b4c4c8; --line: #34444b; --line-strong: #46595f; --danger: #ffb4a8; }
+
+/* Buttons: secondary by default, one accent primary, quiet ghosts. */
+.workspace button, dialog button:not(.x), .floating-tools button, .lesson-cue button, .match-strip button, #board-setup, .shape-controls button, .shape-controls select { font-weight: 600; }
+button.accent, dialog button.accent, .primary.wide, #match-toggle, #open-match { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+#team-view #team-stats { background: var(--panel-hi); color: var(--ink); border-color: var(--line-strong); font-weight: 600; }
+button:disabled { opacity: .38; }
+
+/* Headings: one pattern on every tab. */
+.page-heading .eyebrow { display: none; }
+h1:focus-visible { text-decoration: none; }
+dialog h2:focus { outline: none; }
+
+/* Bottom tabs: icon over label, quiet until selected, centered on wide screens. */
+.app-tabs { gap: 0; padding: 0 max(0px, calc((100% - 560px) / 2)); background: var(--bg); border-top-color: var(--line); }
+.app-tabs button { position: relative; flex-direction: column; gap: 3px; border-radius: 0; font-size: 11.5px; font-weight: 600; color: var(--muted); }
+.app-tabs button svg { width: 22px; height: 22px; display: block; }
+.app-tabs [aria-selected="true"] { background: transparent; box-shadow: none; color: var(--accent); }
+.app-tabs [aria-selected="true"]::before { content: ""; position: absolute; top: -1px; left: 30%; right: 30%; height: 3px; border-radius: 0 0 3px 3px; background: var(--accent); }
+@media (max-height: 430px) and (orientation: landscape) {
+  .app-tabs button { flex-direction: row; gap: 6px; }
+  .app-tabs button svg { width: 18px; height: 18px; }
+}
+
+/* Segmented controls: the selected option is the filled one. */
+.subnav { max-width: 420px; }
+.subnav button { color: var(--muted); }
+.subnav .on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+
+/* Board header: a calm setup bar, then equal-width line controls. */
+#board-setup { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 42px; padding: 8px 14px; background: var(--panel); border-color: var(--line-strong); font-size: 14px; color: var(--ink); text-align: left; }
+#board-setup::after { content: "\203A"; font-size: 20px; line-height: 1; color: var(--muted); }
+.shape-controls button, .shape-controls select { background: var(--panel); border-color: var(--line-strong); }
+.shape-controls > button, .shape-modes { flex: 1 1 auto; }
+.shape-modes { gap: 0; padding: 0; border: 1px solid var(--line-strong); border-radius: 9px; background: var(--panel); overflow: hidden; }
+.shape-modes button { flex: 1 1 0; border: 0; border-radius: 0; min-height: 42px; }
+.shape-modes button + button { border-left: 1px solid var(--line-strong); }
+.shape-team { color: var(--muted); }
+#board-setup { width: 100%; }
+@media (min-width: 1100px) { #board-setup { width: auto; } .shape-controls > button, .shape-modes { flex: 0 0 auto; } }
+@media (max-width: 360px) { .shape-controls { flex-wrap: wrap; } .shape-modes { flex-basis: 100%; } }
+
+/* Tool rail: icons share a top line so one- and two-line labels align. */
+.rail button { border-color: #2c3c43; }
+@media (orientation: portrait) { .rail { grid-auto-rows: 56px; } .rail button { justify-content: flex-start; padding-top: 7px; } }
+
+/* Hints sit lightly on the field. */
+.toast { top: 8px; left: 10px; max-width: min(38%, 220px); transform: translateY(-6px); text-align: left; border-radius: 12px; padding: 6px 11px; font-size: 12px; line-height: 1.35; background: rgba(10, 18, 22, .8); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+
+/* Roster: names lead; actions stay quiet until needed. */
+.roster-row { gap: 6px; padding: 6px 0; border-top-color: var(--line); }
+.roster-row strong { font-size: 15px; font-weight: 650; }
+.roster-row small.status { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); }
+.roster-row small.status.starting { color: var(--accent); }
+.roster-row small.status.out { color: #8d9ea3; }
+.workspace .roster-row button { min-width: 44px; padding: 8px 10px; background: transparent; border-color: transparent; color: var(--muted); font-size: 13px; }
+.workspace .roster-row button:hover { background: var(--panel-hi); color: var(--ink); }
+.workspace .roster-row .delete:hover { color: var(--danger); }
+#team-view .team-columns > #lineup-panel, .board-default-settings, .team-files { border-color: var(--line); }
+@media (min-width: 700px) { #apply-lineup.grow { flex: 0 1 340px; } }
+
+/* Dialogs: pinned title and primary action, scrolling body. */
+dialog { padding: 0 20px 20px; }
+dialog .dialog-title { position: sticky; top: 0; z-index: 2; margin: 0 0 4px; padding: 18px 0 12px; background: #1b272c; }
+dialog:has(.dialog-footer) { padding-bottom: 0; }
+.dialog-footer { position: sticky; bottom: 0; z-index: 2; margin: 16px -20px 0; padding: 12px 20px 20px; background: #1b272c; border-top: 1px solid var(--line); }
+.dialog-footer button { width: 100%; margin: 0; }
+.release-section ul { font-size: 15px; line-height: 1.45; padding-left: 20px; }
+.release-section li + li { margin-top: 6px; }
+
+/* Board menu: grouped list rows instead of a wall of buttons. */
+#menuDialog h3 { margin: 18px 0 8px; }
+#menuDialog .menu-actions { gap: 0; margin-top: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #172226; }
+#menuDialog .menu-actions > button, #menuDialog .menu-actions > a { display: flex; align-items: center; justify-content: flex-start; min-height: 48px; margin: 0; padding: 0 14px; border: 0; border-radius: 0; background: transparent; color: var(--ink); font-size: 15px; font-weight: 600; text-align: left; }
+#menuDialog .menu-actions > :is(button, a) + :is(button, a) { border-top: 1px solid var(--line); }
+#menuDialog .menu-actions > *::after { content: "\203A"; margin-left: auto; padding-left: 12px; color: var(--muted); font-size: 20px; line-height: 1; }
+#menuDialog .menu-actions > :active { background: var(--panel-hi); }
+.menu-footer { margin-top: 14px; }
+.menu-footer p { margin: 4px 0; font-size: 12.5px; color: var(--muted); }
+
+/* Goal picker: even grid, opponent goal set apart in its kit color. */
+.pick-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (min-width: 700px) { .pick-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.pick-grid button { min-height: 48px; text-align: left; line-height: 1.2; }
+.pick-opponent { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+dialog .pick-opponent button { width: 100%; text-align: left; border-left: 6px solid var(--team-color); }
+
+/* Match: compact header, big tabular score and clock, upright pitch. */
+#match-view { overflow-y: auto; }
+#match-view .match-stage { flex: 1 0 auto; }
+#match-view .match-stage > .match-layout { flex: 1 0 auto; }
+#match-view .page-heading > div { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+#match-view .page-heading h1 { font-size: 22px; }
+#match-context { flex-basis: 100%; margin: 0; color: var(--muted); font-size: 14px; }
+.phase-pill { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; background: #22343a; color: var(--muted); font-size: 12px; font-weight: 700; }
+#match-view[data-state="live"] .phase-pill { background: #23352f; color: var(--accent); }
+#match-view[data-state="live"] #match-context { display: none; }
+#match-view[data-state="idle"] .match-broadcast { display: none; }
+#match-view .match-broadcast { padding: 10px 12px; background: #101b20; border-radius: 10px; }
+#match-view #match-score { font-size: 34px; font-weight: 800; color: var(--ink); }
+#match-view #match-clock { font-size: 28px; font-weight: 800; }
+#match-view .broadcast-team { font-size: 13px; }
+#match-view .match-actions { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
+#match-view .match-actions button { width: 100%; min-height: 48px; padding: 8px 6px; font-size: 14px; line-height: 1.15; }
+#match-view #match-goal { background: transparent; border: 2px solid var(--accent); color: var(--accent); font-weight: 700; }
+#match-view #match-end, #match-view #match-details { background: transparent; border-color: var(--line-strong); color: var(--ink); }
+#match-prereq { margin: 0; padding: 0; border: 0; background: transparent; box-shadow: none; }
+#match-prereq p { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
+.match-pitch, #match-view .match-pitch { background: transparent; }
+#match-view #sideline { padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+#match-view #sideline > strong { font-size: 13px; }
+#match-view #sideline > p { color: var(--muted); font-size: 12px; }
+#match-view #sideline-players button { background: var(--panel-hi); border-color: var(--line-strong); font-size: 14px; }
+#field-player-picker summary { font-size: 13px; font-weight: 600; color: var(--muted); }
+@media (orientation: portrait) { #match-view #sideline { max-height: none; overflow: visible; } }
+/* Phones scroll Match under a pinned score bar; the pitch always uses the full width. */
+@media (orientation: portrait) and (max-width: 600px) {
+  #match-view .match-stage > .match-controls { position: sticky; top: -12px; z-index: 6; }
+  #match-view .match-stage .match-pitch { flex: none; width: 100%; height: auto; min-height: 0; aspect-ratio: 620 / 1000; }
+}
+@media (max-width: 600px) {
+  #match-view #match-score { font-size: 30px; }
+  #match-view #match-clock { font-size: 26px; }
+  #match-view .page-heading h1 { font-size: 20px; }
+  #match-view .match-actions { gap: 6px; }
+  #match-view .match-actions button { font-size: 13px; padding: 6px 4px; }
+}
+
+/* Round 3 refinements */
+.toast.show { transform: translateY(0); }
+.board-scroll-hint { display: none !important; }
+@media (max-width: 899px) { #team-view[data-section="lineup"] .team-columns > #lineup-panel { margin-top: 0; padding-top: 0; border-top: 0; } }
+.situation-card .button-row { align-items: stretch; }
+#match-view #match-goal:disabled { border: 1px solid var(--line); color: var(--muted); opacity: .55; }
+#match-view .match-actions { grid-auto-columns: minmax(max-content, 1fr); }
+#match-view .match-actions button { white-space: nowrap; padding-left: 12px; padding-right: 12px; }
+#match-view #open-match { justify-self: start; min-width: 200px; }
+@media (min-width: 901px) { #match-view .match-stage > .match-controls { grid-template-columns: auto minmax(0, 1fr) auto; } }
+@media (max-width: 360px) {
+  #match-view .match-actions { grid-auto-columns: minmax(0, 1fr); }
+  #match-view .match-actions button { white-space: normal; padding-left: 4px; padding-right: 4px; }
+  .pick-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (orientation: landscape) { #match-view #sideline { flex-basis: 200px; } #match-view #sideline-players button { white-space: nowrap; } }
+dialog .swatches { display: grid; grid-template-columns: repeat(6, minmax(0, 40px)); justify-content: start; }
+dialog .swatches button { width: 100%; height: auto; min-height: 0; aspect-ratio: 1; }
+#menuDialog #full-field::after { content: none; }
+
+/* Round 4 refinements */
+@media (max-width: 600px) { #match-view[data-phase="ready"] #match-toggle, #match-view[data-phase="halftime"] #match-toggle { grid-column: span 2; } }
+@media (min-width: 901px) {
+  #match-view .match-stage > .match-controls > .match-actions { grid-column: 3; }
+  #match-view #open-match { width: auto; min-width: 200px; justify-self: end; }
+  .toast { max-width: none; white-space: nowrap; }
+}
+.kit-color legend { padding: 0; }
+@media (max-width: 360px) { .workspace .roster-row button { padding-left: 6px; padding-right: 6px; } }

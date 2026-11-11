@@ -58,12 +58,12 @@
 <section id="match-view" class="workspace" role="tabpanel" aria-labelledby="tab-match" hidden>
   <div class="match-stage">
     <div id="match-strip" class="match-controls match-strip">
-      <header class="page-heading"><div><p class="eyebrow">SIDELINE</p><h1 tabindex="-1">Match</h1><span id="match-phase">Match setup</span><p id="match-context">Prepare a lineup in Team, then set up your match.</p></div></header>
+      <header class="page-heading"><div><p class="eyebrow">SIDELINE</p><h1 tabindex="-1">Match</h1><span id="match-phase" class="phase-pill">Not started</span><p id="match-context">Prepare a lineup in Team, then set up your match.</p></div></header>
       <div class="match-broadcast">
         <div class="broadcast-score"><span id="match-team-name" class="broadcast-team"></span><span id="match-score" aria-label="Score"></span><span id="match-opponent-name" class="broadcast-team"></span></div>
         <div class="match-status"><span id="match-clock" role="timer"></span><span id="match-stoppage"></span></div>
       </div>
-        <div class="match-actions"><button id="open-match">Match setup</button><button id="match-toggle" hidden>Begin first half</button><button id="match-goal" hidden>Goal</button><button id="match-end" hidden>End of half</button><button id="match-details" hidden>Details</button></div>
+        <div class="match-actions"><button id="open-match">Set up match</button><button id="match-toggle" hidden>Begin first half</button><button id="match-goal" hidden>Goal</button><button id="match-end" hidden>End of half</button><button id="match-details" hidden>Details</button></div>
         <p id="match-selection" role="status" aria-live="polite"></p>
       <div id="match-prereq" class="panel"><p id="match-prereq-text"></p><button data-open-tab="team">Open Team</button></div>
     </div>
@@ -102,10 +102,10 @@
 </section>
 
 <nav class="app-tabs" role="tablist" aria-label="Sideline workspaces">
-<button id="tab-board" role="tab" aria-selected="true" aria-controls="board-view" data-tab="board">Board</button>
-<button id="tab-team" role="tab" aria-selected="false" aria-controls="team-view" tabindex="-1" data-tab="team">Team</button>
-<button id="tab-match" role="tab" aria-selected="false" aria-controls="match-view" tabindex="-1" data-tab="match">Match</button>
-<button id="tab-coaching" role="tab" aria-selected="false" aria-controls="coaching-view" tabindex="-1" data-tab="coaching">Coaching</button></nav>
+<button id="tab-board" role="tab" aria-selected="true" aria-controls="board-view" data-tab="board"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/><circle cx="12" cy="12" r="3"/></svg>Board</button>
+<button id="tab-team" role="tab" aria-selected="false" aria-controls="team-view" tabindex="-1" data-tab="team"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 4.5a3.2 3.2 0 0 1 0 6.3M18 14.3c1.8.8 3 2.6 3 5.7"/></svg>Team</button>
+<button id="tab-match" role="tab" aria-selected="false" aria-controls="match-view" tabindex="-1" data-tab="match"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 2M10 3h4M12 3v3"/></svg>Match</button>
+<button id="tab-coaching" role="tab" aria-selected="false" aria-controls="coaching-view" tabindex="-1" data-tab="coaching"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></svg>Coaching</button></nav>
 </div>
 
 <dialog id="playerDialog" class="player-menu" aria-labelledby="player-title">
@@ -131,31 +131,38 @@
 
 <dialog id="menuDialog">
   <form method="dialog">
-    <div class="dialog-title"><h2>Board</h2><button class="x" aria-label="Close">Close</button></div>
+    <div class="dialog-title"><h2 tabindex="-1" autofocus>Board</h2><button class="x" aria-label="Close">Close</button></div>
     <h3 id="board-labels-title">My team labels</h3>
     <div class="seg" role="group" aria-labelledby="board-labels-title"><button type="button" id="board-label-position" aria-pressed="false">Pos</button><button type="button" id="board-label-number" aria-pressed="false">#</button></div>
+    <h3>Board</h3>
     <div class="menu-actions"><button type="button" id="board-default">Default board</button>
-      <button type="button" data-open-tab="team">Team and board setup</button>
-      <button type="button" data-open-tab="coaching">Coaching situations</button>
       <button type="button" id="load">Saved boards</button>
-      <button type="button" id="show-release-notes">What's new</button>
-      <a id="send-feedback" href="mailto:darthreckoner@gmail.com">Send feedback</a>
-      <p class="feedback-address">No email app? Send your feedback to <span>darthreckoner@gmail.com</span>.</p>
-      <button type="button" id="export-board">Export editable board</button>
-      <button type="button" class="import-file">Import Sideline file</button>
       <button type="button" id="full-field">Show full field</button>
-      <button type="button" id="help">How it works</button>
-      <button type="button" id="install">Add to Home Screen</button>
     </div>
-    <p id="offline-status" class="quiet" role="status">Open online to prepare offline use.</p>
+    <h3>Go to</h3>
+    <div class="menu-actions"><button type="button" data-open-tab="team">Team and board setup</button>
+      <button type="button" data-open-tab="coaching">Coaching situations</button>
+    </div>
+    <h3>Files</h3>
+    <div class="menu-actions"><button type="button" id="export-board">Export editable board</button>
+      <button type="button" class="import-file">Import Sideline file</button>
+    </div>
+    <h3>Help</h3>
+    <div class="menu-actions"><button type="button" id="help">How it works</button>
+      <button type="button" id="show-release-notes">What's new</button>
+      <button type="button" id="install">Add to Home Screen</button>
+      <a id="send-feedback" href="mailto:darthreckoner@gmail.com">Send feedback</a>
+    </div>
+    <div class="menu-footer"><p class="feedback-address">No email app? Write to <span>darthreckoner@gmail.com</span></p>
+    <p id="offline-status" class="quiet" role="status">Open online to prepare offline use.</p></div>
   </form>
 </dialog>
 
 <dialog id="releaseDialog" aria-labelledby="release-title">
-  <div class="dialog-title"><h2 id="release-title">What's new</h2><button type="button" id="release-close" class="x" aria-label="Close What's new">Close</button></div>
+  <div class="dialog-title"><h2 id="release-title" tabindex="-1" autofocus>What's new</h2><button type="button" id="release-close" class="x" aria-label="Close What's new">Close</button></div>
   <div id="release-list"></div>
   <p id="release-storage-error" class="form-error" role="status" hidden></p>
-  <button type="button" id="release-dismiss" class="accent wide">Got it</button>
+  <div class="dialog-footer"><button type="button" id="release-dismiss" class="accent wide">Got it</button></div>
 </dialog>
 
 <dialog id="savesDialog">
@@ -192,7 +199,7 @@
 <dialog id="rosterDialog" aria-labelledby="roster-title"><form id="roster-form"><div class="dialog-title"><h2 id="roster-title">Add player</h2><button type="button" class="x" data-close="rosterDialog" aria-label="Cancel">Close</button></div><label>Name or nickname<input id="roster-name" maxlength="48" required autocomplete="off"></label><label>Jersey number<input id="roster-number" type="number" min="0" max="99" step="1" inputmode="numeric" required></label><label>Role to try (optional)<select id="roster-role"><option value="">Any role</option></select></label><button type="submit" class="accent wide">Save player</button><p id="roster-error" class="form-error" role="alert"></p></form></dialog>
 <dialog id="confirmDialog" aria-labelledby="confirm-title"><form method="dialog"><div class="dialog-title"><h2 id="confirm-title">Review change</h2><button value="cancel" class="x" aria-label="Cancel">Close</button></div><p id="confirm-message"></p><div class="button-row"><button value="cancel" class="grow">Cancel</button><button id="confirm-accept" value="accept" class="accent grow">Continue</button></div></form></dialog>
 <dialog id="sourceDialog" aria-labelledby="source-title"><div class="dialog-title"><h2 id="source-title">How to play &amp; source</h2><button class="x" data-close="sourceDialog" aria-label="Close">Close</button></div><div id="source-details"></div></dialog>
-<dialog id="boardSetupDialog" aria-labelledby="board-setup-title"><div class="dialog-title"><h2 id="board-setup-title">Quick board setup</h2><button class="x" id="board-setup-close" aria-label="Close board setup">Close</button></div><p>No roster needed</p>
+<dialog id="boardSetupDialog" aria-labelledby="board-setup-title"><div class="dialog-title"><h2 id="board-setup-title" tabindex="-1" autofocus>Quick board setup</h2><button class="x" id="board-setup-close" aria-label="Close board setup">Close</button></div><p>No roster needed</p>
     <h3>Format</h3><div class="seg" id="formatSeg"></div>
     <label>Formation for<select id="setup-side"><option value="home">Home</option><option value="away">Away</option><option value="both">Both teams</option></select></label>
     <div class="formation-controls"><label>Formation<select id="formation" aria-describedby="formation-help"></select></label><button type="button" id="reset-formation">Reset both teams</button></div>
@@ -200,7 +207,7 @@
     <h3>Home color</h3><div class="swatches" id="sw-home"></div><h3>Away color</h3><div class="swatches" id="sw-away"></div>
 
 </dialog>
-<dialog id="matchDialog" aria-labelledby="match-title"><div class="dialog-title"><h2 id="match-title">Match</h2><button class="x" id="match-close" aria-label="Close match">Close</button></div><div id="match-body"></div></dialog>
+<dialog id="matchDialog" aria-labelledby="match-title"><div class="dialog-title"><h2 id="match-title" tabindex="-1" autofocus>Match</h2><button class="x" id="match-close" aria-label="Close match">Close</button></div><div id="match-body"></div></dialog>
 <input id="import-input" type="file" accept=".json,application/json" hidden>
 <div id="app-notice" class="app-notice" role="status" aria-live="polite" hidden></div>
 

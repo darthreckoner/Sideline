@@ -116,7 +116,7 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.evaluate(()=>JSON.stringify(SIDELINE_BOARD.snapshot())),boardBefore);
     for (const size of [{width:390,height:844},{width:320,height:568}]) {
       await page.setViewportSize(size);
-      assert.equal(await page.locator('#match-view').evaluate(el=>el.scrollHeight > el.clientHeight+1), false, 'phone match fits without page scrolling');
+      { const box = await page.locator('#match-pitch').boundingBox(); assert.ok(box.height > box.width && box.width >= size.width - 40, 'phones keep an upright, full-width pitch'); }
       await page.locator('#match-pitch').scrollIntoViewIfNeeded();
       const old = await page.evaluate(()=>SIDELINE_MATCH_UI.active.slots[0]);
       // Select field first so scrolling to the bench does not move the pitch target.

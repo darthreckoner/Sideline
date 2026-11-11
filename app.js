@@ -1218,7 +1218,7 @@ window.SIDELINE_READY = (async () => {
   try {
     await setFormat("9v9");
     resize();
-    note("Drag to move · tap to pass · hold a player to edit", 4500);
+    note(matchMedia("(orientation: portrait) and (max-height: 700px)").matches ? "Drag players to move · Swipe the field to scroll" : "Drag to move · Tap to pass · Hold to edit", 4500);
     const localPreview = ["localhost", "127.0.0.1"].includes(location.hostname) && new URLSearchParams(location.search).has("preview");
     if ("serviceWorker" in navigator && location.protocol !== "file:" && !localPreview) {
       $("offline-status").textContent = "Preparing offline files…";

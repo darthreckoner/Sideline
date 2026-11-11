@@ -56,8 +56,11 @@
     if (!W.ready) return;
     const canvas = $("match-pitch"), box = canvas.getBoundingClientRect();
     if (!box.width || !box.height) return;
-    const {board, team} = context(); pitchState = board;
-    canvas.width = Math.round(box.width); canvas.height = Math.round(box.height);
+    const {board, team, side} = context(); pitchState = board;
+    // Only your players matter during a match; opponents are generic formation markers.
+    board.players = board.players.filter((p) => p.team === side);
+    const ratio = Math.min(devicePixelRatio || 1, 3);
+    canvas.width = Math.round(box.width * ratio); canvas.height = Math.round(box.height * ratio);
     B.preview(canvas, board, true);
     $("match-context").textContent = active ? `${active.teamName} vs ${active.opponent}` : `${team.name} - current Team lineup`;
     const ownHome = !active || active.side === "home";
@@ -86,7 +89,8 @@
     venue.onchange = () => { ownColor.value = venue.value === "home" ? team.color : team.awayColor || "#ffffff"; };
     const half = field("Minutes per half", "number", 25); half.min = 1; half.max = 90;
     const season = field("Season", "text", seasons[team.id]?.at(-1) || String(new Date().getFullYear())); season.maxLength = 80;
-    button($("match-body"), "Prepare match", async () => {
+    const footer = node("div"); footer.className = "dialog-footer"; $("match-body").append(footer);
+    const prepare = button(footer, "Prepare match", async () => {
       try {
         const name = season.value.trim(); if (!name) throw Error("Name the season first.");
         window.SIDELINE_DATA.lineup(team, window.SIDELINE_PRESETS);
@@ -101,6 +105,7 @@
         await persist(); $("matchDialog").close(); pickedField = pickedBench = null; render();
       } catch (e) { W.notice(e.message); }
     });
+    prepare.classList.add("accent");
   }
   function selection() {
     if (pickedField == null || !pickedBench) return renderBench();
@@ -174,14 +179,16 @@
   }
   function render() {
     const hasStarters = context().markers.length > 0;
+    $("match-view").dataset.state = active ? "live" : "idle";
+    $("match-view").dataset.phase = active?.phase || "";
     $("match-prereq").hidden = !!active;
-    $("match-prereq-text").textContent = hasStarters ? "Lineup ready. Choose Match setup to prepare the game before making substitutions." : "Choose your starters in Team, then return here to set up the match.";
+    $("match-prereq-text").textContent = hasStarters ? "Lineup ready. Add the opponent, kit colors and half length to get ready for kickoff." : "Choose your starters in Team first.";
     $("match-prereq").querySelector("button").hidden = hasStarters;
     document.querySelector(".match-layout").hidden = !active && !hasStarters;
     syncPlayers(); renderBench();
     $("open-match").hidden = !!active;
     for (const id of ["match-toggle", "match-end", "match-goal", "match-details"]) $(id).hidden = !active;
-    if (!active) { $("match-phase").textContent = "Match setup"; lastSwap = ""; pickedField = pickedBench = null; $("match-clock").textContent = $("match-stoppage").textContent = $("match-score").textContent = ""; return; }
+    if (!active) { $("match-phase").textContent = "Not started"; lastSwap = ""; pickedField = pickedBench = null; $("match-clock").textContent = $("match-stoppage").textContent = $("match-score").textContent = ""; return; }
     $("match-toggle").textContent = active.phase === "ready" ? "Begin first half" : active.phase === "halftime" ? "Begin second half" : active.running ? "Pause" : "Resume";
     $("match-end").hidden = active.phase !== "playing";
     $("match-end").textContent = active.half === 1 ? "End of half" : "End match";
@@ -194,10 +201,14 @@
   function goals() {
     show("goals", "Record a goal");
     for (const onField of [true,false]) {
-      $("match-body").append(node("h3", onField ? "On field" : "Substitutes"));
-      for (const p of active.roster.filter(p=>active.slots.includes(p.id)===onField)) button($("match-body"), `#${p.number} ${p.name}`, () => { act(() => M.goal(active, p.id)); $("matchDialog").close(); });
+      const people = active.roster.filter(p=>active.slots.includes(p.id)===onField);
+      if (!people.length) continue;
+      const grid = node("div"); grid.className = "pick-grid";
+      $("match-body").append(node("h3", onField ? "On field" : "Substitutes"), grid);
+      for (const p of people) button(grid, `#${p.number} ${p.name}`, () => { act(() => M.goal(active, p.id)); $("matchDialog").close(); });
     }
-    button($("match-body"), "Opponent goal", () => { act(() => M.goal(active, null)); $("matchDialog").close(); });
+    const other = node("div"); other.className = "pick-opponent"; $("match-body").append(other);
+    button(other, "Opponent goal", () => { act(() => M.goal(active, null)); $("matchDialog").close(); }).style.setProperty("--team-color", active.opponentColor || "#59b7e8");
   }
   function table(parent, rows, live = false) {
     const wrap = node("div"); wrap.className = "stat-scroll";
