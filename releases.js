@@ -27,8 +27,6 @@ window.SIDELINE_RELEASES = [
       "Choose home and away kit colors for your team and opponent from a shared palette.",
       "Quick board setup sits at the top of Board, no roster needed. Set start is now Set position.",
       "A cleaner, calmer look: sharper match field, grouped Board menu, clearer buttons and icons in the bottom tabs.",
-      "Scroll over the lineup field to reach the player list below it without getting stuck.",
-      "Edit player numbers in landscape with the number field and Apply button above the keyboard.",
     ],
   },
 ];
