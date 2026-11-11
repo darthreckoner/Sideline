@@ -29,4 +29,12 @@ window.SIDELINE_RELEASES = [
       "A cleaner, calmer look: sharper match field, grouped Board menu, clearer buttons and icons in the bottom tabs.",
     ],
   },
+  {
+    version: "0.7.1",
+    changes: [
+      "Delete a finished match from Team → Game & season stats.",
+      "Long team names fit beside the score on Match.",
+      "Match fits your phone turned sideways: a compact scoreboard and the whole field on screen.",
+    ],
+  },
 ];

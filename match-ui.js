@@ -256,6 +256,10 @@
         m.goals.forEach((g, i) => button(d, `${g.playerId === null ? "Opponent" : m.roster.find((p) => p.id === g.playerId)?.name} goal · Remove`, async () => {
           if (await W.confirm("Remove this goal from this game and season totals?", "Remove goal")) { m.goals.splice(i, 1); await persist(); draw(); }
         }));
+        button(d, "Delete this match", async () => {
+          if (!(await W.confirm(`Delete the match against ${m.opponent}? Its time and goals will be removed from season totals. This can't be undone.`, "Delete match"))) return;
+          matches = matches.filter((x) => x !== m); await persist(); draw();
+        }).classList.add("danger");
       }
     };
     picker.onchange = draw; draw(); button(body, "Export match records", exportRecords);

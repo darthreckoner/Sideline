@@ -86,6 +86,11 @@ const server = http.createServer((req, res) => {
     await page.getByRole('button',{name:'Player 2',exact:true}).click();
     const history = await page.evaluate(async()=> (await SIDELINE_STORE.run('workspace','get','matches')).matches);
     assert.equal(history[0].goals[0].playerId,'r1');
+    await page.locator('#match-body details summary').click();
+    await page.getByRole('button',{name:'Delete this match',exact:true}).click(); await accept();
+    await page.waitForFunction(()=>!document.querySelector('#match-body details'));
+    assert.equal((await page.evaluate(async()=> (await SIDELINE_STORE.run('workspace','get','matches')).matches)).length,0);
+    console.log('PASS deleting a completed match removes it from saved records');
     await page.locator('#match-close').click();
     console.log('PASS match preparation, sideline swaps, stoppage, halves, goals, tab switching, reload and season stats');
     // Saved play baseline is session-only until explicit overwrite.

@@ -837,3 +837,29 @@ dialog .swatches button { width: 100%; height: auto; min-height: 0; aspect-ratio
 }
 .kit-color legend { padding: 0; }
 @media (max-width: 360px) { .workspace .roster-row button { padding-left: 6px; padding-right: 6px; } }
+
+/* Long team names wrap inside their own column instead of running under the score. */
+#match-view .broadcast-team { white-space: normal; min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 1.2; }
+#match-view .broadcast-score { gap: 10px; }
+/* Landscape: the page fits the screen again; only Subs scroll. */
+@media (orientation: landscape) {
+  #match-view .match-stage, #match-view .match-stage > .match-layout { flex: 1 1 0; min-height: 0; }
+  #match-view .match-stage .match-pitch { height: auto; min-height: 0; }
+  #match-view #sideline { max-height: none; overflow-y: auto; }
+}
+/* Landscape phones: one compact header row (scoreboard + actions), the pitch takes the rest. */
+@media (orientation: landscape) and (max-height: 500px) {
+  #match-view { padding-top: 6px; padding-bottom: 6px; }
+  #match-view .match-stage { gap: 6px; }
+  #match-view .match-stage > .match-controls { grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; padding: 6px 10px; }
+  #match-view[data-state="live"] .match-controls .page-heading { display: none; }
+  #match-view .match-stage > .match-controls > .match-actions { grid-column: 2; }
+  #match-view .match-broadcast { padding: 4px 10px; }
+  #match-view .broadcast-score { gap: 8px; }
+  #match-view #match-score { font-size: 24px; }
+  #match-view #match-clock { font-size: 20px; }
+  #match-view .broadcast-team { font-size: 12px; border-top-width: 3px; padding-top: 2px; }
+  #match-view .match-actions button { min-height: 44px; padding: 6px 12px; font-size: 13px; }
+  #match-view #sideline { flex-basis: 180px; padding: 8px 10px; }
+  #match-view #sideline > p { display: none; }
+}
