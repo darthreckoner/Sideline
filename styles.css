@@ -321,7 +321,7 @@ input[type="checkbox"] { width: 22px; min-height: 22px; height: 22px; accent-col
 .lesson-cue p { line-height: 1.4; margin: 8px 0; }
 .lesson-cue button { font-size: 12px; }
 .toast { z-index: 4; }
-.app-notice { position: fixed; top: max(12px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 20; background: #08221deb; border: 1px solid #5f896b; border-radius: 12px; padding: 12px 18px; max-width: min(90vw, 500px); font-size: 14px; box-shadow: 0 5px 22px #0005; }
+.app-notice { pointer-events: none; position: fixed; top: max(12px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 20; background: #08221deb; border: 1px solid #5f896b; border-radius: 12px; padding: 12px 18px; max-width: min(90vw, 500px); font-size: 14px; box-shadow: 0 5px 22px #0005; }
 .source-reference { border-left: 3px solid var(--accent); padding-left: 12px; }
 a { color: var(--accent); }
 .playbook-row { display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 10px; background: var(--panel); border: 1px solid #355e4e; border-radius: 12px; }
@@ -551,7 +551,7 @@ h1:focus-visible { text-decoration: underline; text-decoration-color: var(--acce
 }
 
 /* Long names wrap inside a bounded identity column, leaving metric space. */
-#match-body table { table-layout: fixed; width: 410px; }
+#match-body table { table-layout: fixed; width: 500px; }
 #match-body th:first-child, #match-body td:first-child {
   width: 140px; max-width: 140px; white-space: normal; overflow-wrap: anywhere;
 }
@@ -733,6 +733,8 @@ dialog:has(.dialog-footer) { padding-bottom: 0; }
 @media (min-width: 700px) { .pick-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .pick-grid button { min-height: 48px; text-align: left; line-height: 1.2; }
 .pick-opponent { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.pick-none { margin-bottom: 6px; }
+dialog .pick-none button { width: 100%; min-height: 48px; }
 dialog .pick-opponent button { width: 100%; text-align: left; border-left: 6px solid var(--team-color); }
 
 /* Match: compact header, big tabular score and clock, upright pitch. */
@@ -752,7 +754,7 @@ dialog .pick-opponent button { width: 100%; text-align: left; border-left: 6px s
 #match-view .broadcast-team { font-size: 13px; }
 #match-view .match-actions { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
 #match-view .match-actions button { width: 100%; min-height: 48px; padding: 8px 6px; font-size: 14px; line-height: 1.15; }
-#match-view #match-goal { background: transparent; border: 2px solid var(--accent); color: var(--accent); font-weight: 700; }
+#match-view #match-goal, #match-view #match-save { background: transparent; border: 2px solid var(--accent); color: var(--accent); font-weight: 700; }
 #match-view #match-end, #match-view #match-details { background: transparent; border-color: var(--line-strong); color: var(--ink); }
 #match-prereq { margin: 0; padding: 0; border: 0; background: transparent; box-shadow: none; }
 #match-prereq p { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
@@ -780,7 +782,7 @@ dialog .pick-opponent button { width: 100%; text-align: left; border-left: 6px s
 .toast.show { transform: translateY(0); }
 @media (max-width: 899px) { #team-view[data-section="lineup"] .team-columns > #lineup-panel { margin-top: 0; padding-top: 0; border-top: 0; } }
 .situation-card .button-row { align-items: stretch; }
-#match-view #match-goal:disabled { border: 1px solid var(--line); color: var(--muted); opacity: .55; }
+#match-view #match-goal:disabled, #match-view #match-save:disabled { border: 1px solid var(--line); color: var(--muted); opacity: .55; }
 #match-view .match-actions { grid-auto-columns: minmax(max-content, 1fr); }
 #match-view .match-actions button { white-space: nowrap; padding-left: 12px; padding-right: 12px; }
 #match-view #open-match { justify-self: start; min-width: 200px; }

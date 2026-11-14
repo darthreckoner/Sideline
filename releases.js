@@ -51,4 +51,13 @@ window.SIDELINE_RELEASES = [
       "A damaged import file now gets a clear message.",
     ],
   },
+  {
+    version: "0.7.4",
+    changes: [
+      "More 9v9 formations: 3-4-1, 3-1-3-1, 4-3-1 and 4-2-2.",
+      "New Save button on Match credits a save to whoever is in goal.",
+      "After a goal, pick who made the assist, or tap No assist.",
+      "Game & season stats show assists and saves for every player.",
+    ],
+  },
 ];

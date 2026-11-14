@@ -13,7 +13,7 @@ The five activity boards are Sideline illustrations based on FIFA youth lessons.
 - **Board** is where you move players, pass, draw, save and share a picture.
 - **Coaching** has five activities you can filter by age and topic, plus guides for the board and My playbook for saved boards. You can search, favorite, rename, copy, delete and export saved boards.
 - **Team** keeps named teams: mark who's available, choose starters and save lineups. Once you've assigned a goalkeeper, you can leave other positions empty for a short-handed lineup. You can also copy, export or import teams, and review game and season stats.
-- **Match** runs a game: clock by half with stoppage time, substitutions, goals and playing time for every player.
+- **Match** runs a game: clock by half with stoppage time, substitutions, goals, assists, goalkeeper saves and playing time for every player.
 
 Switching tabs keeps your board and undo history. Opening an activity or applying a lineup can be undone, even if it changes the field format. An activity keeps the group size from its source. For example, a 2v1 stays a 2v1 on the 9v9 board. T marks a target player; OFF marks the first defender who has stopped in the U-10 activity. The board shows an idea to discuss, so players still need to try the activity on the field.
 
@@ -77,7 +77,7 @@ Offense draws triangles among the visible players on your team. A triangle needs
 
 ### Choose a formation or lineup
 
-On Board, tap Quick board setup, choose Home, Away or both and pick a formation. The 9v9 choices are 3-3-2 and 3-2-3; the 7v7 choices are 2-3-1 and 3-2-1. Reset both teams puts the players back in their default positions and labels, keeps the colors, and clears drawings and the saved starting point. Undo brings the previous board back.
+On Board, tap Quick board setup, choose Home, Away or both and pick a formation. The 9v9 choices are 3-3-2, 3-2-3, 3-4-1, 3-1-3-1, 4-3-1 and 4-2-2; the 7v7 choices are 2-3-1 and 3-2-1. Reset both teams puts the players back in their default positions and labels, keeps the colors, and clears drawings and the saved starting point. Undo brings the previous board back.
 
 To use a roster, add your players in Team, check who's available, and choose the starters. Check the lineup preview and tap Apply to board. Team edits alone don't change the board. After applying a lineup, tap Set position on the board if you want to demonstrate a play.
 
@@ -87,7 +87,7 @@ Sideline saves your current board and starting point on this device after comple
 
 Export a board, playbook or team as an editable JSON file and keep it somewhere else. Browser cleanup can erase local saves, so an exported file is your backup. Sideline checks a whole file before importing it. Team and playbook imports create copies; opening an imported board replaces the current board, and Undo brings that board back.
 
-Label edits are included in saved boards, starting points and PNGs. Older saved boards get position labels from their saved formation or its default without moving the players. The 9v9 3-3-2 defaults are GK; LB, CB, RB; LM, CM, RM; LF, RF. Left and right follow each team's attacking direction. The label menu also includes LW, RW and ST.
+Label edits are included in saved boards, starting points and PNGs. Older saved boards get position labels from their saved formation or its default without moving the players. The 9v9 3-3-2 defaults are GK; LB, CB, RB; LM, CM, RM; LF, RF. Left and right follow each team's attacking direction. The four-back shapes use LCB and RCB, 3-4-1 uses LCM and RCM, and 3-1-3-1 adds a CDM in front of the back three. The label menu also includes CAM, LW, RW and ST.
 
 ## Changes from v0.1
 
@@ -148,7 +148,7 @@ Choose your starters in Team, then tap Set up match on Match. Enter the opponent
 
 Substitutes are listed beside the field, or below it on an upright phone. Tap an on-field player and then a substitute (or the reverse) to swap them; tap two on-field players to swap their positions. The selected player gets a gold ring, and Cancel clears the selection. Substitutions work before kickoff and during play: the outgoing timer stops and the incoming timer starts immediately.
 
-Goal opens the scorer list and includes Opponent goal. Details shows current player times and lets you remove an incorrectly recorded goal, export match records or discard the match. In Team → Game & season stats you can review each season, add a missed goal, remove a goal or delete a finished match. Completed stats stay attached to the saved team even if you later edit its roster. Export match records downloads a separate JSON file; keep it as a backup. Match-record import is not provided.
+Goal opens the scorer list and includes Opponent goal. After you pick your scorer, choose who assisted or tap No assist; closing the list keeps the goal without an assist. Save credits one save to whoever is in goal right now, following substitutions and position swaps. Details shows current player times and lets you remove an incorrectly recorded goal or save, export match records or discard the match. In Team → Game & season stats you can review each season, add a missed goal (with an optional assist), remove a goal or save or delete a finished match. Completed stats stay attached to the saved team even if you later edit its roster. Export match records downloads a separate JSON file; keep it as a backup. Match-record import is not provided.
 
 ## Saved plays and the default board
 

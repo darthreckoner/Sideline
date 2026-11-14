@@ -60,6 +60,13 @@ const server = http.createServer((req, res) => {
     await page.locator('#tab-match').click();
     await page.clock.fastForward(60000);
     await page.locator('#match-goal').click(); await page.locator('#match-body').getByRole('button',{name:'#1 Player 1',exact:true}).click();
+    assert.match(await page.locator('#match-title').textContent(),/Assist for Player 1/);
+    assert.equal(await page.locator('#match-body').getByRole('button',{name:'#1 Player 1',exact:true}).count(),0); // scorer can't assist
+    await page.locator('#match-body').getByRole('button',{name:'#2 Player 2',exact:true}).click();
+    assert.equal(await page.locator('#matchDialog').evaluate(d=>d.open),false);
+    assert.equal(await page.evaluate(()=>SIDELINE_MATCH_UI.active.goals[0].assistId),'r1');
+    await page.locator('#match-save').click();
+    assert.deepEqual(await page.evaluate(()=>SIDELINE_MATCH_UI.active.saves.map(s=>s.playerId)),['r9']); // the keeper subbed in, not roster order
     await page.locator('#tab-board').click(); await page.clock.fastForward(60000); await page.locator('#tab-match').click();
     const first = await page.evaluate(()=>structuredClone(SIDELINE_MATCH_UI.active));
     assert.equal(first.goals.length,1); assert.ok(first.substitutions.length === 1);
@@ -84,6 +91,8 @@ const server = http.createServer((req, res) => {
     await page.locator('#match-body details summary').click();
     await page.getByRole('button',{name:'Add missed goal',exact:true}).click();
     await page.getByRole('button',{name:'Player 2',exact:true}).click();
+    assert.match(await page.locator('#match-title').textContent(),/Assist for Player 2/);
+    await page.getByRole('button',{name:'No assist',exact:true}).click();
     const history = await page.evaluate(async()=> (await SIDELINE_STORE.run('workspace','get','matches')).matches);
     assert.equal(history[0].goals[0].playerId,'r1');
     await page.locator('#match-body details summary').click();

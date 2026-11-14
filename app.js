@@ -232,7 +232,7 @@ function shapeSegments(value = board) {
   const players = value.players.filter((p) => p.team === teachingTeam(value) && !p.hidden);
   if (shape.mode === "defense") {
     if (value.activity) return []; // Small-sided activities do not prescribe formation lines.
-    const groups = [["LB", "CB", "RB"], ["LM", "CM", "RM"], ["LW", "LF", "ST", "RF", "RW"]];
+    const groups = [["LB", "LCB", "CB", "RCB", "RB"], ["LM", "LCM", "CM", "RCM", "RM"], ["LW", "LF", "ST", "RF", "RW"]];
     return groups.flatMap((roles) => {
       const line = players.filter((p) => roles.includes(p.position)).sort((a, b) => roles.indexOf(a.position) - roles.indexOf(b.position) || a.id.localeCompare(b.id));
       return line.slice(1).map((p, i) => [line[i], p]);

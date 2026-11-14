@@ -22,7 +22,7 @@ test("opens as 9v9, with a goalkeeper per team and registered formation choices"
   }
   assert.equal(board.players[0].x, 65);
   assert.equal(board.players[9].x, 935);
-  assert.deepEqual(a.get("formation").children.map((o) => o.value), ["3-3-2", "3-2-3"]);
+  assert.deepEqual(a.get("formation").children.map((o) => o.value), ["3-3-2", "3-2-3", "3-4-1", "3-1-3-1", "4-3-1", "4-2-2"]);
   assert.equal(a.get("reset-start").disabled, false);
 });
 

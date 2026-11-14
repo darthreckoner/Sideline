@@ -176,12 +176,12 @@
     document.querySelector(".match-layout").hidden = !active && !hasStarters;
     renderPitch(); renderBench();
     $("open-match").hidden = !!active;
-    for (const id of ["match-toggle", "match-end", "match-goal", "match-details"]) $(id).hidden = !active;
+    for (const id of ["match-toggle", "match-end", "match-goal", "match-save", "match-details"]) $(id).hidden = !active;
     if (!active) { $("match-phase").textContent = "Not started"; lastSwap = ""; pickedField = pickedBench = null; $("match-clock").textContent = $("match-stoppage").textContent = $("match-score").textContent = ""; return; }
     $("match-toggle").textContent = active.phase === "ready" ? "Begin first half" : active.phase === "halftime" ? "Begin second half" : active.running ? "Pause" : "Resume";
     $("match-end").hidden = active.phase !== "playing";
     $("match-end").textContent = active.half === 1 ? "End of half" : "End match";
-    $("match-goal").disabled = active.phase !== "playing";
+    $("match-goal").disabled = $("match-save").disabled = active.phase !== "playing";
     const ownGoals = active.goals.filter(g => g.playerId !== null).length;
     const opponentGoals = active.goals.filter(g => g.playerId === null).length;
     $("match-score").textContent = active.side === "away" ? `${opponentGoals} \u2013 ${ownGoals}` : `${ownGoals} \u2013 ${opponentGoals}`;
@@ -194,16 +194,37 @@
       if (!people.length) continue;
       const grid = node("div"); grid.className = "pick-grid";
       $("match-body").append(node("h3", onField ? "On field" : "Substitutes"), grid);
-      for (const p of people) button(grid, `#${p.number} ${p.name}`, () => { act(() => M.goal(active, p.id)); $("matchDialog").close(); });
+      for (const p of people) button(grid, `#${p.number} ${p.name}`, () => {
+        // Record the goal at the moment it's tapped; the assist is an optional second step.
+        act(() => M.goal(active, p.id));
+        assists(active, active.goals.at(-1), () => { persist(); render(); $("matchDialog").close(); });
+      });
     }
     const other = node("div"); other.className = "pick-opponent"; $("match-body").append(other);
     button(other, "Opponent goal", () => { act(() => M.goal(active, null)); $("matchDialog").close(); }).style.setProperty("--team-color", active.opponentColor || "#59b7e8");
   }
+  const personName = (m, id) => m.roster.find((p) => p.id === id)?.name;
+  const goalText = (m, g, word = "") => g.playerId === null ? `Opponent${word}` : `${personName(m, g.playerId)}${word}${g.assistId ? ` (assist ${personName(m, g.assistId)})` : ""}`;
+  function assists(m, goal, done) {
+    show("assist", `Assist for ${personName(m, goal.playerId)}?`);
+    const pick = (id) => { try { M.assist(m, goal, id); done(); } catch (e) { W.notice(e.message); } };
+    const none = node("div"); none.className = "pick-none";
+    $("match-body").append(none);
+    button(none, "No assist", () => pick(null)).classList.add("accent");
+    const live = m === active;
+    for (const onField of live ? [true, false] : [null]) {
+      const people = m.roster.filter((p) => p.id !== goal.playerId && (onField === null || m.slots.includes(p.id) === onField));
+      if (!people.length) continue;
+      const grid = node("div"); grid.className = "pick-grid";
+      $("match-body").append(node("h3", onField === null ? "Players" : onField ? "On field" : "Substitutes"), grid);
+      for (const p of people) button(grid, `#${p.number} ${p.name}`, () => pick(p.id));
+    }
+  }
   function table(parent, rows, live = false) {
     const wrap = node("div"); wrap.className = "stat-scroll";
     const table = node("table"), head = node("tr");
-    for (const title of ["Player", "Games", "Time played", "Goals"]) head.append(node("th", title)); table.append(head);
-    for (const p of rows) { const row = node("tr"); const identity = node("td", `#${p.number} ${p.name}`); identity.title = identity.textContent; row.append(identity, node("td", p.games)); const time = node("td", fmt(p.ms)); if (live) time.dataset.playerTime = p.id; row.append(time, node("td", p.goals)); table.append(row); }
+    for (const title of ["Player", "Games", "Time", "Goals", "Assists", "Saves"]) head.append(node("th", title)); table.append(head);
+    for (const p of rows) { const row = node("tr"); const identity = node("td", `#${p.number} ${p.name}`); identity.title = identity.textContent; row.append(identity, node("td", p.games)); const time = node("td", fmt(p.ms)); if (live) time.dataset.playerTime = p.id; row.append(time, node("td", p.goals), node("td", p.assists), node("td", p.saves)); table.append(row); }
     wrap.append(table); parent.append(wrap);
   }
   function details() {
@@ -212,8 +233,13 @@
     const body = $("match-body"); body.append(node("p", `${active.season} · ${phaseText()}`));
     const view = { ...active, time: M.times(active) }; table(body, M.totals([view]), true);
     body.append(node("h3", "Goals — tap to correct"));
-    active.goals.forEach((g, i) => button(body, `${g.playerId === null ? "Opponent" : active.roster.find((p) => p.id === g.playerId)?.name} · Half ${g.half} ${fmt(g.elapsed)} · Remove`, async () => {
+    active.goals.forEach((g, i) => button(body, `${goalText(active, g)} · Half ${g.half} ${fmt(g.elapsed)} · Remove`, async () => {
       if (await W.confirm("Remove this goal from the score and player stats?", "Remove goal")) { act(() => active.goals.splice(i, 1)); details(); }
+    }));
+    const saves = active.saves || [];
+    if (saves.length) body.append(node("h3", "Saves — tap to correct"));
+    saves.forEach((s, i) => button(body, `${active.roster.find((p) => p.id === s.playerId)?.name} · Half ${s.half} ${fmt(s.elapsed)} · Remove`, async () => {
+      if (await W.confirm("Remove this save from player stats?", "Remove save")) { act(() => active.saves.splice(i, 1)); details(); }
     }));
     button(body, "Export match records", exportRecords);
     button(body, "Discard this match", async () => { if (await W.confirm("Discard this match and its recorded time and goals?", "Discard")) { active = null; await persist(); $("matchDialog").close(); render(); } }).classList.add("danger");
@@ -241,10 +267,17 @@
         button(d, "Add missed goal", () => {
           show("correction", "Add a missed goal");
           const choices = [...m.roster, { id: null, name: "Opponent", number: "" }];
-          for (const p of choices) button($("match-body"), p.name, async () => { m.goals.push({ playerId: p.id, half: null, elapsed: null, corrected: true }); await persist(); stats(m.season); });
+          for (const p of choices) button($("match-body"), p.name, async () => {
+            const goal = { playerId: p.id, half: null, elapsed: null, corrected: true }; m.goals.push(goal);
+            if (p.id === null) { await persist(); return stats(m.season); }
+            persist(); assists(m, goal, async () => { await persist(); stats(m.season); });
+          });
         });
-        m.goals.forEach((g, i) => button(d, `${g.playerId === null ? "Opponent" : m.roster.find((p) => p.id === g.playerId)?.name} goal · Remove`, async () => {
+        m.goals.forEach((g, i) => button(d, `${goalText(m, g, " goal")} · Remove`, async () => {
           if (await W.confirm("Remove this goal from this game and season totals?", "Remove goal")) { m.goals.splice(i, 1); await persist(); draw(); }
+        }));
+        (m.saves || []).forEach((s, i) => button(d, `${m.roster.find((p) => p.id === s.playerId)?.name} save · Remove`, async () => {
+          if (await W.confirm("Remove this save from this game and season totals?", "Remove save")) { m.saves.splice(i, 1); await persist(); draw(); }
         }));
         button(d, "Delete this match", async () => {
           if (!(await W.confirm(`Delete the match against ${m.opponent}? Its time and goals will be removed from season totals. This can't be undone.`, "Delete match"))) return;
@@ -258,6 +291,10 @@
   $("match-close").onclick = () => $("matchDialog").close(); $("matchDialog").addEventListener("close", () => { dialogMode = null; });
   $("cancel-sub").onclick = () => { pickedField = pickedBench = null; lastSwap = "Selection cancelled."; renderBench(); renderPitch(); };
   $("match-goal").onclick = goals;
+  $("match-save").onclick = () => act(() => {
+    const keeperId = M.save(active), keeper = active.roster.find((p) => p.id === keeperId);
+    W.notice(`Save: #${keeper.number} ${keeper.name}`);
+  });
   $("match-toggle").onclick = () => act(() => active.phase === "halftime" ? M.secondHalf(active) : M.toggle(active));
   $("match-end").onclick = async () => {
     if (!(await W.confirm(active.half === 1 ? "End the first half and pause all player timers?" : "End this match and save its statistics?", active.half === 1 ? "End of half" : "End match"))) return;

@@ -70,6 +70,10 @@ test("line groups follow formation roles in 9v9 and 7v7", async () => {
   const a = await app(); a.get("lines-defense").onclick();
   a.run('applyFormation("home", "3-2-3")');
   assert.deepEqual(edges(a), [["h1", "h2"], ["h2", "h3"], ["h4", "h5"], ["h6", "h7"], ["h7", "h8"]]);
+  a.run('applyFormation("home", "4-3-1")');
+  assert.deepEqual(edges(a), [["h1", "h2"], ["h2", "h3"], ["h3", "h4"], ["h5", "h6"], ["h6", "h7"]]);
+  a.run('applyFormation("home", "3-1-3-1")'); // The lone CDM sits between the lines.
+  assert.deepEqual(edges(a), [["h1", "h2"], ["h2", "h3"], ["h5", "h6"], ["h6", "h7"]]);
   a.run('board.players.find(p => p.id === "h1").position = "ST"; applyFormation("home", "3-3-2")');
   assert.equal(a.state().board.players.find((p) => p.id === "h1").position, "ST");
   await a.run('setFormat("7v7")'); a.get("show-lines").onclick();

@@ -7,7 +7,7 @@
     const slots = team.assignments.slice();
     if (new Set(slots.filter(Boolean)).size !== slots.filter(Boolean).length || !slots.some(Boolean) || slots.filter(Boolean).some((id) => !roster.some((p) => p.id === id))) throw Error("Apply an available starting lineup first.");
     return { id, teamId: team.id, teamName: team.name, side, format: team.format, formation: team.formation, season, opponent, date: now, halfMs: halfMinutes * 60000,
-      half: 1, phase: "ready", running: false, since: null, elapsed: 0, roster, slots, time: Object.fromEntries(roster.map((p) => [p.id, 0])), goals: [], substitutions: [] };
+      half: 1, phase: "ready", running: false, since: null, elapsed: 0, roster, slots, time: Object.fromEntries(roster.map((p) => [p.id, 0])), goals: [], saves: [], substitutions: [] };
   }
   function elapsed(m, now = Date.now()) { return m.elapsed + (m.running ? Math.max(0, now - m.since) : 0); }
   function times(m, now = Date.now()) {
@@ -49,17 +49,33 @@
     if (playerId !== null && !m.roster.some((p) => p.id === playerId)) throw Error("Choose a scorer.");
     m.goals.push({ playerId, half: m.half, elapsed: elapsed(m, now) });
   }
+  // An assist is optional and belongs to one of your goals, never the scorer's own.
+  function assist(m, goal, playerId) {
+    if (!goal || goal.playerId === null) throw Error("Only your team's goals have assists.");
+    if (playerId !== null && (playerId === goal.playerId || !m.roster.some((p) => p.id === playerId))) throw Error("Choose a different player for the assist.");
+    if (playerId === null) delete goal.assistId; else goal.assistId = playerId;
+  }
+  // Slot 0 is the goalkeeper in every formation, so a save goes to whoever is in goal now.
+  function save(m, now = Date.now()) {
+    if (m.phase !== "playing") throw Error("Begin a half to record a save.");
+    const keeper = m.slots[0];
+    if (!keeper) throw Error("No goalkeeper is on the field.");
+    (m.saves ||= []).push({ playerId: keeper, half: m.half, elapsed: elapsed(m, now) });
+    return keeper;
+  }
   function totals(matches) {
     const players = new Map();
     for (const m of matches) for (const p of m.roster) {
-      const row = players.get(p.id) || { ...p, games: 0, ms: 0, goals: 0 };
+      const row = players.get(p.id) || { ...p, games: 0, ms: 0, goals: 0, assists: 0, saves: 0 };
       const time = m.time[p.id] || 0;
       row.games += Number(time > 0); row.ms += time; row.goals += m.goals.filter((g) => g.playerId === p.id).length;
+      row.assists += m.goals.filter((g) => g.assistId === p.id).length;
+      row.saves += (m.saves || []).filter((s) => s.playerId === p.id).length;
       players.set(p.id, row);
     }
     return [...players.values()];
   }
-  const api = { create, elapsed, times, toggle, endHalf, secondHalf, clock, substitute, swapPositions, goal, totals };
+  const api = { create, elapsed, times, toggle, endHalf, secondHalf, clock, substitute, swapPositions, goal, assist, save, totals };
   root.SIDELINE_MATCH = api;
   if (typeof module !== "undefined") module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

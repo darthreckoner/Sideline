@@ -35,7 +35,7 @@ test('goals, match totals and season aggregation retain stable player identities
   const m = make(); M.toggle(m, 0); M.goal(m, 'a', 20000); M.goal(m, null, 30000); M.endHalf(m, 60000);
   M.secondHalf(m, 70000); M.endHalf(m, 130000);
   const totals = M.totals([m, structuredClone(m)]);
-  assert.deepEqual(totals.find(p => p.id === 'a'), { id:'a', name:'a', number:0, games:2, ms:240000, goals:2 });
+  assert.deepEqual(totals.find(p => p.id === 'a'), { id:'a', name:'a', number:0, games:2, ms:240000, goals:2, assists:0, saves:0 });
   assert.equal(totals.find(p => p.id === 'c').games, 0);
 });
 test('invalid substitutions and finished match actions cannot change the ledger', () => {
@@ -58,4 +58,27 @@ test('position swaps preserve membership, running time and substitution history'
   for (const pair of [[0,0],[-1,1],[0,2],[0,0.5]]) assert.throws(() => M.swapPositions(m, ...pair));
   M.endHalf(m, 61000); M.secondHalf(m, 62000); M.endHalf(m, 63000);
   assert.throws(() => M.swapPositions(m, 0, 1));
+});
+test('saves go to whoever is in goal, follow keeper swaps and count in totals', () => {
+  const m = make();
+  assert.throws(() => M.save(m, 0), /Begin a half/);
+  M.toggle(m, 0); assert.equal(M.save(m, 30000), 'a');
+  M.swapPositions(m, 0, 1); assert.equal(M.save(m, 60000), 'b');
+  M.substitute(m, 0, 'c', 90000); assert.equal(M.save(m, 95000), 'c');
+  assert.deepEqual(m.saves.map((s) => [s.playerId, s.half, s.elapsed]), [['a', 1, 30000], ['b', 1, 60000], ['c', 1, 95000]]);
+  const old = JSON.parse(JSON.stringify(m)); delete old.saves; // Matches saved before saves existed.
+  const rows = Object.fromEntries(M.totals([m, old]).map((p) => [p.id, p.saves]));
+  assert.deepEqual(rows, { a: 1, b: 1, c: 1 });
+  m.slots[0] = null; assert.throws(() => M.save(m, 99000), /No goalkeeper/);
+});
+test('assists attach to your own goals, never the scorer, and count in totals', () => {
+  const m = make(); M.toggle(m, 0); M.goal(m, 'a', 10000); M.goal(m, null, 20000);
+  assert.throws(() => M.assist(m, m.goals[0], 'a'), /different player/);
+  assert.throws(() => M.assist(m, m.goals[1], 'b'), /your team's goals/);
+  assert.throws(() => M.assist(m, m.goals[0], 'zzz'), /different player/);
+  M.assist(m, m.goals[0], 'c'); // A substitute can be credited.
+  assert.equal(m.goals[0].assistId, 'c');
+  const rows = Object.fromEntries(M.totals([m]).map((p) => [p.id, [p.goals, p.assists]]));
+  assert.deepEqual(rows, { a: [1, 0], b: [0, 0], c: [0, 1] });
+  M.assist(m, m.goals[0], null); assert.equal('assistId' in m.goals[0], false);
 });
