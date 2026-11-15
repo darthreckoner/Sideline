@@ -894,11 +894,13 @@ dialog .swatches button { width: 100%; height: auto; min-height: 0; aspect-ratio
 
 /* Roster positions: tap every position a player plays. */
 .position-chips { display: grid; gap: 8px; margin: 4px 0 12px; padding: 0; border: 0; }
-.position-chips legend { margin-bottom: 6px; font-size: 14px; color: var(--muted); }
-.position-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.position-line-name { flex: 0 0 84px; font-size: 12px; color: var(--muted); }
-dialog .position-chip { min-width: 52px; min-height: 40px; padding: 4px 10px; border: 1px solid var(--line-strong); border-radius: 999px; background: transparent; color: var(--ink); font-weight: 700; }
+.position-chips legend { padding: 0; margin-bottom: 6px; font-size: 14px; color: var(--muted); }
+/* Wide dialogs: line name beside its chips. Phones: name above, so a full line of chips fits and wraps evenly. */
+.position-line { display: grid; grid-template-columns: 84px minmax(0, 1fr); align-items: center; gap: 6px; }
+.position-line-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.position-line-name { font-size: 12px; color: var(--muted); }
+@media (max-width: 600px) { .position-line { grid-template-columns: minmax(0, 1fr); gap: 4px; } .position-line-chips { gap: 5px; } dialog .position-chip { min-width: 44px; padding: 4px 6px; } }
+dialog .position-chip { min-width: 48px; min-height: 40px; padding: 4px 8px; border: 1px solid var(--line-strong); border-radius: 999px; background: transparent; color: var(--ink); font-weight: 700; }
 dialog .position-chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-@media (max-width: 400px) { .position-line-name { flex-basis: 100%; } }
 .list-plays { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; font-weight: 600; }
 .sub-pair.fits { box-shadow: inset 0 0 0 1px var(--accent); }

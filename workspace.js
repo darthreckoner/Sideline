@@ -350,12 +350,12 @@
     const codes = [...Object.keys(formatPositions), ...[...chosen].filter((code) => !Object.hasOwn(formatPositions, code))];
     for (const line of ["Goalkeeper", "Defense", "Midfield", "Attack"]) {
       const inLine = codes.filter((code) => lines[code] === line); if (!inLine.length) continue;
-      const row = create("div", "position-line"); row.append(create("span", "position-line-name", line));
+      const row = create("div", "position-line"), chips = create("div", "position-line-chips"); row.append(create("span", "position-line-name", line), chips);
       for (const code of inLine) {
         const chip = create("button", "position-chip", code); chip.type = "button"; chip.dataset.position = code;
         chip.title = formatPositions[code] || code; chip.setAttribute("aria-label", formatPositions[code] || code); chip.setAttribute("aria-pressed", String(chosen.has(code)));
         chip.onclick = () => chip.setAttribute("aria-pressed", String(chip.getAttribute("aria-pressed") !== "true"));
-        row.append(chip);
+        chips.append(chip);
       }
       groups.append(row);
     }

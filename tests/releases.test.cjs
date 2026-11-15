@@ -200,5 +200,6 @@ test("release entries are ordered, usable, and match the offline cache version",
   const worker = fs.readFileSync(path.join(root, "sw.js"), "utf8");
   const cache = worker.match(/const CACHE = "sideline-v([^"]+)"/);
   assert.ok(cache);
-  assert.equal(cache[1], entries[entries.length - 1].version);
+  // A "-N" build suffix ships a small fix without a new What's new card.
+  assert.equal(cache[1].replace(/-\d+$/, ""), entries[entries.length - 1].version);
 });
