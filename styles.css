@@ -845,6 +845,7 @@ dialog .swatches button { width: 100%; height: auto; min-height: 0; aspect-ratio
   #match-body th:nth-child(3), #match-body td:nth-child(3) { width: 17%; }
   #match-body th, #match-body td { padding: 9px 4px; }
   #match-body th:first-child, #match-body td:first-child { padding-left: 6px; }
+  #match-body th:nth-child(2), #match-body td:nth-child(2) { width: 15%; padding-left: 14px; } /* breathing room after the pinned name column */
   #match-body .full-heading { display: none; }
   #match-body .short-heading { display: inline; }
   #match-body .stat-key { display: block; margin: -4px 0 8px; font-size: 12px; }
