@@ -272,7 +272,7 @@
     for (const player of team.roster) {
       const row = create("div", "roster-row"), available = create("input"); available.type = "checkbox"; available.checked = player.available; available.setAttribute("aria-label", `${player.name} available for this lineup`);
       available.onchange = () => { player.available = available.checked; team.activeLineup = ""; if (!player.available) team.assignments = team.assignments.map((pid) => pid === player.id ? null : pid); renderTeam(); scheduleTeamSave(); };
-      const person = create("div", "person"); person.append(create("strong", "", `#${player.number} ${player.name}`), create("small", `status ${!player.available ? "out" : assigned.has(player.id) ? "starting" : "bench"}`, `${!player.available ? "Unavailable" : assigned.has(player.id) ? "Starting" : "Bench"}${player.role ? " · Try " + player.role : ""}`));
+      const person = create("div", "person"); person.append(create("strong", "", `#${player.number} ${player.name}`), create("small", `status ${!player.available ? "out" : assigned.has(player.id) ? "starting" : "bench"}`, `${!player.available ? "Unavailable" : assigned.has(player.id) ? "Starting" : "Bench"}${player.positions?.length ? " · Plays " + player.positions.join(", ") : ""}`));
       const edit = create("button", "", "Edit"); edit.setAttribute("aria-label", `Edit ${player.name}`); edit.onclick = () => openPlayer(player);
       const remove = create("button", "delete", "Remove"); remove.setAttribute("aria-label", `Remove ${player.name}`);
       remove.onclick = async () => { if (await confirmChange(`Remove ${player.name} from this team? Your saved boards won't change.`, "Remove player")) { team.roster = team.roster.filter((p) => p.id !== player.id); team.assignments = team.assignments.map((pid) => pid === player.id ? null : pid); for (const saved of team.lineups || []) { saved.assignments = saved.assignments.map((pid) => pid === player.id ? null : pid); saved.available = saved.available.filter((pid) => pid !== player.id); } team.activeLineup = ""; renderTeam(); scheduleTeamSave(); } };
@@ -343,8 +343,22 @@
     el("roster-name").value = player?.name || "";
     const numbers = new Set(currentTeam().roster.map((p) => p.number));
     el("roster-number").value = player?.number ?? Array.from({ length: 100 }, (_, i) => i + 1).find((n) => n <= 99 && !numbers.has(n)) ?? 0;
-    const roles = el("roster-role"); roles.replaceChildren(); const any = create("option", "", "Any role"); any.value = ""; roles.append(any);
-    for (const [value, name] of Object.entries(presets[currentTeam().format].positions)) { const option = create("option", "", `${value} · ${name}`); option.value = value; roles.append(option); } roles.value = player?.role || "";
+    // Tap every position this player plays; Match uses them to place players going on.
+    const chosen = new Set(player?.positions || []), groups = el("roster-positions"), lines = window.SIDELINE_MATCH.LINES;
+    groups.replaceChildren(create("legend", "", "Positions they play (optional)"));
+    const formatPositions = presets[currentTeam().format].positions;
+    const codes = [...Object.keys(formatPositions), ...[...chosen].filter((code) => !Object.hasOwn(formatPositions, code))];
+    for (const line of ["Goalkeeper", "Defense", "Midfield", "Attack"]) {
+      const inLine = codes.filter((code) => lines[code] === line); if (!inLine.length) continue;
+      const row = create("div", "position-line"); row.append(create("span", "position-line-name", line));
+      for (const code of inLine) {
+        const chip = create("button", "position-chip", code); chip.type = "button"; chip.dataset.position = code;
+        chip.title = formatPositions[code] || code; chip.setAttribute("aria-label", formatPositions[code] || code); chip.setAttribute("aria-pressed", String(chosen.has(code)));
+        chip.onclick = () => chip.setAttribute("aria-pressed", String(chip.getAttribute("aria-pressed") !== "true"));
+        row.append(chip);
+      }
+      groups.append(row);
+    }
     el("roster-error").textContent = ""; el("rosterDialog").showModal(); el("roster-name").focus();
   }
   el("add-player").onclick = () => openPlayer();
@@ -352,8 +366,9 @@
     event.preventDefault(); const team = currentTeam(), name = el("roster-name").value.trim(), raw = el("roster-number").value;
     if (!name || !/^\d{1,2}$/.test(raw)) { el("roster-error").textContent = "Enter a name and whole jersey number from 0 to 99."; return; }
     if (team.roster.some((p) => p.id !== editingPlayer && p.number === Number(raw))) { el("roster-error").textContent = "That jersey number is already in this roster."; return; }
-    if (editingPlayer) { const player = team.roster.find((p) => p.id === editingPlayer); player.name = name; player.number = Number(raw); player.role = el("roster-role").value; }
-    else { if (team.roster.length >= 40) { el("roster-error").textContent = "This team already has 40 players."; return; } team.roster.push({ id: D.id(), name, number: Number(raw), available: true, role: el("roster-role").value }); }
+    const positions = [...el("roster-positions").querySelectorAll('[aria-pressed="true"]')].map((chip) => chip.dataset.position);
+    if (editingPlayer) { const player = team.roster.find((p) => p.id === editingPlayer); player.name = name; player.number = Number(raw); player.positions = positions; delete player.role; }
+    else { if (team.roster.length >= D.MAX_ROSTER) { el("roster-error").textContent = `This team already has ${D.MAX_ROSTER} players.`; return; } team.roster.push({ id: D.id(), name, number: Number(raw), available: true, positions }); }
     el("rosterDialog").close(); renderTeam(); scheduleTeamSave();
   };
   el("apply-lineup").onclick = async () => {

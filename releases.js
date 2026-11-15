@@ -60,4 +60,15 @@ window.SIDELINE_RELEASES = [
       "Game & season stats show assists and saves for every player.",
     ],
   },
+  {
+    version: "0.7.5",
+    changes: [
+      "Match opens as a list: who's on the field with their time, and the bench with the least-played player first. Tap Field to see the field.",
+      "Make several subs at once: tap players coming off, then players going on, and confirm.",
+      "Give players every position they play in Team. Subs going on are placed in the spot that fits them best.",
+      "Undo your last group of subs, and playing time goes back as if it never happened.",
+      "Stats fit an upright phone without sliding sideways.",
+      "A team can now hold up to 60 players.",
+    ],
+  },
 ];

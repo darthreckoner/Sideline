@@ -41,7 +41,7 @@ const server = http.createServer((req, res) => {
     await page.locator('#tab-match').click();
     await page.locator('#open-match').click();
     await page.getByLabel('Opponent', {exact:true}).fill('Visitors'); await page.getByLabel('Season', {exact:true}).fill('Fall 2026');
-    await page.getByRole('button',{name:'Prepare match',exact:true}).click();
+    await page.getByRole('button',{name:'Prepare match',exact:true}).click(); await page.locator('#match-show-field').click(); // these checks drive the Field view
     await page.locator('#matchDialog').waitFor({state:'hidden'});
 
 
@@ -54,7 +54,7 @@ const server = http.createServer((req, res) => {
     const fullName='Alexandria Montgomery-Smith';
     await page.evaluate(async name=>{SIDELINE_WORKSPACE.currentTeam().roster[0].name=name;await SIDELINE_WORKSPACE.flush();},fullName);
     await page.locator('#open-match').click();
-    await page.getByRole('button',{name:'Prepare match',exact:true}).click();
+    await page.getByRole('button',{name:'Prepare match',exact:true}).click(); await page.locator('#match-show-field').click(); // these checks drive the Field view
     await page.locator('#matchDialog').waitFor({state:'hidden'});
     assert.equal(await page.locator('#match-field-players button').first().textContent(), '#1 '+fullName, 'picker must refresh renamed player between matches');
     for(const width of [320,390]) {

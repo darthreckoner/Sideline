@@ -1,6 +1,7 @@
 // Serializable board and team rules shared by the UI, local storage and file imports.
 (function (root) {
   "use strict";
+  const MAX_ROSTER = 60; // Room for a whole academy; jersey numbers stay unique within a team.
   const copy = (value) => structuredClone(value);
   const fail = (message) => { throw Error(message); };
   const text = (value, max = 80) => typeof value === "string" && value.length <= max;
@@ -87,12 +88,19 @@
     if (!input || !text(input.id) || !input.id || !Object.hasOwn(presets, input.format) || !text(input.name, 48) || !color(input.color)) fail("Invalid team settings.");
     if (input.awayColor != null && !color(input.awayColor)) fail("Invalid away color.");
     const preset = presets[input.format];
-    if (!Object.hasOwn(preset.formations, input.formation) || !Array.isArray(input.roster) || input.roster.length > 40) fail("Invalid roster or formation.");
+    if (!Object.hasOwn(preset.formations, input.formation) || !Array.isArray(input.roster) || input.roster.length > MAX_ROSTER) fail("Invalid roster or formation.");
     const team = copy(input), ids = new Set();
+    const known = new Set(Object.values(presets).flatMap((value) => Object.keys(value.positions || {})));
     team.awayColor ||= "#ffffff";
     for (const p of team.roster) {
       if (!text(p.id) || !p.id || ids.has(p.id) || !text(p.name, 48) || !p.name.trim() || !Number.isInteger(p.number) || p.number < 0 || p.number > 99 || typeof p.available !== "boolean") fail("Invalid roster player.");
-      if (p.role != null && (!text(p.role, 24) || (p.role && !Object.hasOwn(preset.positions, p.role)))) fail("Invalid preferred role.");
+      // Positions are checked against every format, so switching 9v9 <-> 7v7 never invalidates a player.
+      if (p.role != null && !text(p.role, 24)) fail("Invalid preferred role.");
+      if (p.positions == null) p.positions = p.role && known.has(p.role) ? [p.role] : [];
+      delete p.role;
+      if (!Array.isArray(p.positions) || p.positions.length > 64 || p.positions.some((code) => typeof code !== "string")) fail("Invalid player positions.");
+      // Unknown codes (e.g. from a newer release) are dropped, never a reason to lose the team.
+      p.positions = [...new Set(p.positions)].filter((code) => known.has(code));
       ids.add(p.id);
     }
     if (!Array.isArray(team.assignments) || team.assignments.length !== preset.playerCount || team.assignments.some((v) => v != null && !ids.has(v))) fail("Invalid lineup assignments.");
@@ -154,7 +162,7 @@
     ["#2563eb", "Blue"], ["#00bcd4", "Cyan"], ["#159447", "Green"],
     ["#1e3a8a", "Navy"], ["#ffffff", "White"], ["#1d1d1f", "Black"]
   ];
-  const api = { palette, copy, id, color, readBoard, readSnapshot, readFile, newTeam, readTeam, lineup, changeShape, assign, copyTeam };
+  const api = { MAX_ROSTER, palette, copy, id, color, readBoard, readSnapshot, readFile, newTeam, readTeam, lineup, changeShape, assign, copyTeam };
   root.SIDELINE_DATA = api;
   if (typeof module !== "undefined") module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

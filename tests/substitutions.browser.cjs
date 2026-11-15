@@ -48,7 +48,7 @@ const server = http.createServer((req, res) => {
     await page.locator('#tab-match').click();
     await page.locator('#open-match').click();
     await page.getByLabel('Opponent', {exact:true}).fill('Visitors'); await page.getByLabel('Season', {exact:true}).fill('Fall 2026');
-    await page.getByRole('button',{name:'Prepare match',exact:true}).click();
+    await page.getByRole('button',{name:'Prepare match',exact:true}).click(); await page.locator('#match-show-field').click(); // these checks drive the Field view
     await page.locator('#matchDialog').waitFor({state:'hidden'});
 
     for (const width of [320,390]) {
@@ -153,7 +153,7 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.getByRole('button',{name:'My team color: Orange',exact:true}).getAttribute('aria-pressed'),'true');
     await page.getByLabel('Opponent color',{exact:true}).fill('#2563eb');
     await page.getByLabel('Opponent',{exact:true}).fill('Home Hosts');
-    await page.getByRole('button',{name:'Prepare match',exact:true}).click();
+    await page.getByRole('button',{name:'Prepare match',exact:true}).click(); await page.locator('#match-show-field').click(); // these checks drive the Field view
     await page.evaluate(()=>SIDELINE_MATCH_UI.flush());
     await page.reload(); await ready(); await page.locator('#tab-match').click();
     assert.deepEqual(await page.evaluate(()=>[SIDELINE_MATCH_UI.active.side,SIDELINE_MATCH_UI.active.color,SIDELINE_MATCH_UI.active.opponentColor]),['away','#ff9f1c','#2563eb']);

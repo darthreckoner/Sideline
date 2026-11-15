@@ -7,6 +7,8 @@
   const fmt = (ms) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
   let active = null, matches = [], seasons = {}, pickedField = null, pickedBench = null, writing = Promise.resolve(), loaded = false;
   let dialogMode = null, benchSignature = null, fieldSignature = null, lastSwap = "";
+  // List view (default) supports several subs at once: offPicks are slots, onPicks roster ids, paired in tap order.
+  let view = "list", offPicks = [], onPicks = [];
   function persist() {
     const value = structuredClone({ key: "matches", active, matches, seasons });
     writing = writing.catch(() => {}).then(() => S.run("workspace", "put", value));
@@ -52,22 +54,27 @@
     board.ball = {x:500,y:310,carrier:null};
     return {team, side, board, markers:board.players.filter(p=>p.team === side)};
   }
-  function renderPitch() {
+  // Scoreboard names and colors, shown in both List and Field views.
+  function renderNames() {
     if (!W.ready) return;
-    const canvas = $("match-pitch"), box = canvas.getBoundingClientRect();
-    if (!box.width || !box.height) return;
-    const {board, team, side} = context(); pitchState = board;
-    // Only your players matter during a match; opponents are generic formation markers.
-    board.players = board.players.filter((p) => p.team === side);
-    const ratio = Math.min(devicePixelRatio || 1, 3);
-    canvas.width = Math.round(box.width * ratio); canvas.height = Math.round(box.height * ratio);
-    B.preview(canvas, board, { selectedRoster: pickedField == null ? null : active?.slots[pickedField] });
+    const { board, team } = context();
     $("match-context").textContent = active ? `${active.teamName} vs ${active.opponent}` : `${team.name} - current Team lineup`;
     const ownHome = !active || active.side === "home";
     $("match-team-name").textContent = ownHome ? team.name : active.opponent;
     $("match-opponent-name").textContent = ownHome ? active?.opponent || "Opponent" : team.name;
     $("match-team-name").style.setProperty("--team-color", board.colors.home);
     $("match-opponent-name").style.setProperty("--team-color", board.colors.away);
+  }
+  function renderPitch() {
+    if (!W.ready) return;
+    const canvas = $("match-pitch"), box = canvas.getBoundingClientRect();
+    if (!box.width || !box.height) return;
+    const {board, side} = context(); pitchState = board;
+    // Only your players matter during a match; opponents are generic formation markers.
+    board.players = board.players.filter((p) => p.team === side);
+    const ratio = Math.min(devicePixelRatio || 1, 3);
+    canvas.width = Math.round(box.width * ratio); canvas.height = Math.round(box.height * ratio);
+    B.preview(canvas, board, { selectedRoster: pickedField == null ? null : active?.slots[pickedField] });
   }
   function setup() {
     if (!loaded) return W.notice("Opening match records…");
@@ -154,6 +161,97 @@
     for (const p of bench) { const b = button(root, `#${p.number} ${p.name}`, () => { pickedBench = pickedBench === p.id ? null : p.id; selection(); }); b.setAttribute("aria-pressed", String(pickedBench === p.id)); }
     if (!bench.length && roster.length) root.append(node("small", "No subs"));
   }
+  function setView(next) {
+    view = next; offPicks = []; onPicks = []; pickedField = pickedBench = null;
+    render();
+  }
+  const person = (id) => active.roster.find((p) => p.id === id);
+  const tag = (p) => `#${p.number} ${p.name}`;
+  function renderList() {
+    const root = $("match-list");
+    if (!active) { root.replaceChildren(); return; }
+    const times = M.times(active), roles = window.SIDELINE_PRESETS[active.format]?.formationPositions?.[active.formation] || [];
+    const row = (parent, p, { role, badge, pressed, onclick, label }) => {
+      const b = node("button"); b.type = "button"; b.className = "list-player"; b.setAttribute("aria-pressed", String(pressed));
+      b.setAttribute("aria-label", label);
+      const r = node("span", role || ""); r.className = "list-role";
+      if (role == null) b.classList.add("bench-player");
+      const name = node("span", tag(p)); name.className = "list-name";
+      if (role == null && p.positions?.length) { const plays = node("small", p.positions.join(" · ")); plays.className = "list-plays"; name.append(plays); }
+      const time = node("span", fmt(times[p.id] || 0)); time.className = "list-time"; time.dataset.liveTime = p.id;
+      const mark = node("span", badge || ""); mark.className = "list-badge";
+      b.append(r, name, mark, time); b.onclick = onclick; parent.append(b);
+    };
+    const field = node("section"), bench = node("section");
+    field.className = "list-group"; bench.className = "list-group";
+    const head = (parent, title, note) => { const h = node("div"); h.className = "list-head"; h.append(node("h2", title), node("span", note)); parent.append(h); };
+    head(field, "On field", "Time played");
+    active.slots.forEach((id, slot) => {
+      const p = id && person(id); if (!p) return;
+      const order = offPicks.indexOf(slot);
+      row(field, p, { role: roles[slot], badge: order >= 0 ? `Off ${order + 1}` : "", pressed: order >= 0,
+        label: `${roles[slot] || ""} ${tag(p)}${order >= 0 ? `, coming off ${order + 1}` : ""}`,
+        onclick: () => { offPicks = order >= 0 ? offPicks.filter((s) => s !== slot) : [...offPicks, slot]; renderList(); } });
+    });
+    // Least-played first, so a fair next sub is at the top.
+    const benchPlayers = active.roster.filter((p) => !active.slots.includes(p.id)).sort((a, b) => (times[a.id] || 0) - (times[b.id] || 0) || a.number - b.number);
+    head(bench, "Bench", "Least time first");
+    for (const p of benchPlayers) {
+      const order = onPicks.indexOf(p.id);
+      row(bench, p, { badge: order >= 0 ? `On ${order + 1}` : "", pressed: order >= 0,
+        label: `${tag(p)}${order >= 0 ? `, going on ${order + 1}` : ""}`,
+        onclick: () => { onPicks = order >= 0 ? onPicks.filter((id) => id !== p.id) : [...onPicks, p.id]; renderList(); } });
+    }
+    if (!benchPlayers.length) bench.append(node("p", "No subs available."));
+    const nodes = [];
+    const last = M.lastSubs(active);
+    if (last.length) {
+      const box = node("div"); box.className = "last-change";
+      const text = node("p"); text.append(node("strong", "Last change: "), last.map((s) => `${tag(person(s.incoming))} on for ${tag(person(s.outgoing))}`).join(" · "));
+      box.append(text);
+      const undo = button(box, last.length > 1 ? `Undo these ${last.length} subs` : "Undo this sub", async () => {
+        if (!(await W.confirm("Put these players back and return their playing time as if the change never happened?", "Undo subs"))) return;
+        act(() => M.undoSubs(active));
+      });
+      undo.className = "undo-subs";
+      if (active.phase === "finished" || last[0].half !== active.half) undo.hidden = true;
+      nodes.push(box);
+    }
+    if (offPicks.length || onPicks.length) {
+      const bar = node("div"); bar.className = "sub-bar"; bar.setAttribute("role", "status");
+      const pairs = node("p"); pairs.className = "sub-pairs";
+      const count = Math.max(offPicks.length, onPicks.length);
+      const ready = offPicks.length === onPicks.length;
+      // With equal picks, each player going on takes the open spot that best fits the positions they play.
+      const planned = ready ? M.bestPairs(active, offPicks, onPicks, roles) : null;
+      for (let i = 0; i < count; i++) {
+        const slot = planned ? planned[i].slot : offPicks[i], incoming = planned ? planned[i].incoming : onPicks[i];
+        const out = slot != null ? person(active.slots[slot]) : null, inn = incoming ? person(incoming) : null;
+        const spot = slot != null && roles[slot] ? ` · ${roles[slot]}` : "";
+        const pair = node("span", `${inn ? `#${inn.number}` : "?"} on for ${out ? `#${out.number}` : "?"}${inn ? spot : ""}`); pair.className = "sub-pair";
+        if (planned && M.fit(inn.positions, roles[slot]) >= 10) pair.classList.add("fits");
+        pairs.append(pair);
+      }
+      const matched = ready && onPicks.some((id) => person(id).positions?.length);
+      const hint = node("small", ready ? (matched ? "Matched to the positions they play. Fine-tune in Field." : "") : offPicks.length > onPicks.length ? `Pick ${offPicks.length - onPicks.length} more from the bench.` : `Pick ${onPicks.length - offPicks.length} more coming off.`);
+      const actions = node("div"); actions.className = "sub-actions";
+      button(actions, "Clear", () => { offPicks = []; onPicks = []; renderList(); });
+      const confirm = button(actions, `Confirm ${count} sub${count === 1 ? "" : "s"}`, () => {
+        const pairsToMake = M.bestPairs(active, offPicks, onPicks, roles);
+        // Keep the picks if the group is refused, so the coach can adjust and retry.
+        act(() => { M.substituteMany(active, pairsToMake); offPicks = []; onPicks = []; W.notice(`${count} sub${count === 1 ? "" : "s"} made.`); });
+        // Show the Last change summary (and its Undo) at the top of the list.
+        $("match-list").scrollTop = 0; $("match-view").scrollTop = 0;
+      });
+      confirm.classList.add("accent"); confirm.disabled = !ready;
+      bar.append(pairs, hint, actions);
+      nodes.push(field, bench, bar);
+    } else {
+      const help = node("p", "Tap players coming off, then players going on. Players with positions in Team go to their best-fitting spot; others pair in the order you tap."); help.className = "list-help";
+      nodes.push(help, field, bench);
+    }
+    root.replaceChildren(...nodes);
+  }
   const phaseText = () => active.phase === "ready" ? "Ready for kickoff" : active.phase === "halftime" ? "Halftime" : active.running ? "Running" : "Paused";
   function tick() {
     if (!active) return;
@@ -161,6 +259,10 @@
     $("match-phase").textContent = phaseText();
     $("match-clock").textContent = `${active.half === 1 ? "1st" : "2nd"} ${fmt(c.main)}`;
     $("match-stoppage").textContent = c.stoppage || M.elapsed(active) >= active.halfMs ? `+${fmt(c.stoppage)}` : "";
+    if (view === "list" && !$("match-list").hidden) {
+      const times = M.times(active);
+      for (const el of $("match-list").querySelectorAll("[data-live-time]")) el.textContent = fmt(times[el.dataset.liveTime] || 0);
+    }
     if (dialogMode === "details" && $("matchDialog").open) {
       const times = M.times(active);
       for (const el of document.querySelectorAll("[data-player-time]")) el.textContent = fmt(times[el.dataset.playerTime] || 0);
@@ -173,8 +275,15 @@
     $("match-prereq").hidden = !!active;
     $("match-prereq-text").textContent = hasStarters ? "Lineup ready. Add the opponent, kit colors and half length to get ready for kickoff." : "Choose your starters in Team first.";
     $("match-prereq").querySelector("button").hidden = hasStarters;
-    document.querySelector(".match-layout").hidden = !active && !hasStarters;
-    renderPitch(); renderBench();
+    const listing = !!active && view === "list";
+    $("match-view").dataset.view = listing ? "list" : "field";
+    $("match-view-switch").hidden = !active;
+    $("match-list").hidden = !listing;
+    $("match-show-list").setAttribute("aria-pressed", String(view === "list"));
+    $("match-show-field").setAttribute("aria-pressed", String(view === "field"));
+    document.querySelector(".match-layout").hidden = listing || (!active && !hasStarters);
+    offPicks = offPicks.filter((slot) => active?.slots[slot]); onPicks = onPicks.filter((id) => active && !active.slots.includes(id));
+    renderNames(); renderPitch(); renderBench(); renderList();
     $("open-match").hidden = !!active;
     for (const id of ["match-toggle", "match-end", "match-goal", "match-save", "match-details"]) $(id).hidden = !active;
     if (!active) { $("match-phase").textContent = "Not started"; lastSwap = ""; pickedField = pickedBench = null; $("match-clock").textContent = $("match-stoppage").textContent = $("match-score").textContent = ""; return; }
@@ -223,9 +332,16 @@
   function table(parent, rows, live = false) {
     const wrap = node("div"); wrap.className = "stat-scroll";
     const table = node("table"), head = node("tr");
-    for (const title of ["Player", "Games", "Time", "Goals", "Assists", "Saves"]) head.append(node("th", title)); table.append(head);
+    // Phones show short headings so every column fits without sliding sideways.
+    for (const [title, short] of [["Player", "Player"], ["Games", "GP"], ["Time", "Time"], ["Goals", "G"], ["Assists", "A"], ["Saves", "SV"]]) {
+      const th = node("th"), full = node("span", title), brief = node("span", short);
+      full.className = "full-heading"; brief.className = "short-heading"; brief.setAttribute("aria-hidden", "true"); th.title = title;
+      th.append(full, brief); head.append(th);
+    }
+    table.append(head);
     for (const p of rows) { const row = node("tr"); const identity = node("td", `#${p.number} ${p.name}`); identity.title = identity.textContent; row.append(identity, node("td", p.games)); const time = node("td", fmt(p.ms)); if (live) time.dataset.playerTime = p.id; row.append(time, node("td", p.goals), node("td", p.assists), node("td", p.saves)); table.append(row); }
-    wrap.append(table); parent.append(wrap);
+    const key = node("p", "GP games · G goals · A assists · SV saves"); key.className = "stat-key quiet";
+    wrap.append(table); parent.append(wrap, key);
   }
   function details() {
     if (!active) return setup();
@@ -291,6 +407,8 @@
   $("match-close").onclick = () => $("matchDialog").close(); $("matchDialog").addEventListener("close", () => { dialogMode = null; });
   $("cancel-sub").onclick = () => { pickedField = pickedBench = null; lastSwap = "Selection cancelled."; renderBench(); renderPitch(); };
   $("match-goal").onclick = goals;
+  $("match-show-list").onclick = () => setView("list");
+  $("match-show-field").onclick = () => setView("field");
   $("match-save").onclick = () => act(() => {
     const keeperId = M.save(active), keeper = active.roster.find((p) => p.id === keeperId);
     W.notice(`Save: #${keeper.number} ${keeper.name}`);

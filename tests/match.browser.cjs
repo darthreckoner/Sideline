@@ -41,7 +41,7 @@ const server = http.createServer((req, res) => {
     await page.locator('#tab-match').click();
     await page.locator('#open-match').click();
     await page.getByLabel('Opponent', {exact:true}).fill('Visitors'); await page.getByLabel('Season', {exact:true}).fill('Fall 2026');
-    await page.getByRole('button',{name:'Prepare match',exact:true}).click();
+    await page.getByRole('button',{name:'Prepare match',exact:true}).click(); await page.locator('#match-show-field').click(); // these checks drive the Field view
     await page.locator('#match-toggle').click();
     await page.clock.fastForward(26*60000); await page.clock.runFor(300);
     assert.match(await page.locator('#match-clock').textContent(), /25:00/); assert.match(await page.locator('#match-stoppage').textContent(), /1:00/);

@@ -238,3 +238,25 @@ test("an invalid later playbook entry rejects the entire import and preserves ev
   a.run(`window.SIDELINE_BOARD.install(${JSON.stringify(legacy)}, "", false)`);
   assert.equal(a.state().board.players[0].x, 110); assert.equal(a.state().board.players[0].position, "GK");
 });
+
+test("a team can hold 60 players, enough for a whole academy, but not 61", () => {
+  const D = require("../data.js");
+  const make = (n) => { const t = D.newTeam(presets); t.name = "Academy"; t.roster = Array.from({ length: n }, (_, i) => ({ id: "p" + i, name: "P" + i, number: i, available: true })); return t; };
+  assert.equal(D.readTeam(make(60), presets).roster.length, 60);
+  assert.throws(() => D.readTeam(make(61), presets), /roster/);
+});
+
+test("players can play several positions, and an old single role becomes their position", () => {
+  const D = require("../data.js");
+  const t = D.newTeam(presets); t.name = "Academy";
+  t.roster = [{ id: "a", name: "A", number: 1, available: true, role: "RB" }, { id: "b", name: "B", number: 2, available: true, positions: ["RB", "RM", "RCB"] }, { id: "c", name: "C", number: 3, available: true }];
+  const read = D.readTeam(t, presets);
+  assert.deepEqual(read.roster.map((p) => p.positions), [["RB"], ["RB", "RM", "RCB"], []]);
+  assert.equal("role" in read.roster[0], false);
+  // A 9v9-only position stays valid if the team switches to 7v7.
+  assert.equal(D.readTeam({ ...read, format: "7v7", formation: "2-3-1", assignments: Array(7).fill(null) }, presets).roster[1].positions.length, 3);
+  const one = (positions) => D.readTeam({ ...t, roster: [{ id: "a", name: "A", number: 1, available: true, positions }] }, presets).roster[0].positions;
+  assert.deepEqual(one(["XX", "RB", "RB"]), ["RB"], "unknown codes and repeats are dropped, not fatal");
+  const every = Object.keys(presets["9v9"].positions); assert.deepEqual(one(every), every, "a player may play every position");
+  for (const bad of ["RB", [1]]) assert.throws(() => one(bad), /positions/);
+});
